@@ -1,38 +1,35 @@
-### Theme
+## Theme
 
-**How Does Education Relate to Poverty Around the World?**
+### Relationship Between Wealth and Health
 
-This project explores the relationship between educational attainment and poverty levels across countries using interactive visualizations built with D3.js.
-
----
-
-### Progress Update (Level 1 – In Progress)
-
-The following components have been completed so far:
-
-- Project repository initialized with structured folders for data, scripts, and web assets.
-- Python virtual environment created and configured with required preprocessing libraries.
-- Country-level datasets downloaded from **Our World in Data**:
-  - Share of population living in poverty ($3/day)
-  - Average years of schooling
-
-- A Python preprocessing pipeline (`scripts/preprocess.py`) was developed to:
-  - Select the most recent common year (2020)
-  - Clean both datasets
-  - Merge them using country codes
-  - Export a processed dataset (`data/processed/level1_data.csv`) ready for D3 visualizations
+This project investigates how economic prosperity relates to population health outcomes across countries. Specifically, the visualization dashboard explores whether countries with higher income levels tend to experience better health indicators.
 
 ---
 
-### Level 1
+## Level 1
 
-**Attributes chosen:**
+### Quantitative Measures Selected
 
-1. Share of population living in poverty ($3/day)
-2. Average years of schooling (educational attainment)
+- **Life Expectancy** (Health indicator)
+- **GDP per Capita** (Wealth indicator)
 
-Next steps include building:
+### Work Completed
 
-- Two distribution visualizations (histograms) for each attribute
-- A scatterplot to examine the correlation between poverty and education across countries
-- Initial dashboard layout integrating the three visualizations
+- Identified project theme focusing on the relationship between wealth and health.
+- Collected country-level datasets from **Our World in Data** for Life Expectancy and GDP per capita.
+- Built a Python preprocessing pipeline to:
+  - Select the most recent common year across datasets
+  - Clean and merge the datasets using country codes
+  - Export a processed dataset ready for visualization
+
+- Set up the D3 project structure and created reusable visualization components.
+- Implemented initial Level-1 visualizations:
+  - Histogram of Life Expectancy distribution
+  - Histogram of GDP per capita distribution
+  - Scatterplot showing the relationship between GDP per capita and Life Expectancy
+
+---
+
+## Level 2
+
+One choropleth map with button to toggle between Life Axpectancy and GDP per Capita
