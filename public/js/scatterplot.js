@@ -105,7 +105,7 @@ class Scatterplot {
 
     circles.exit().remove();
 
-    const xAxis = d3.axisBottom(vis.x).tickFormat(d3.format(".2s"));
+    const xAxis = d3.axisBottom(vis.x).tickFormat(d3.format(".3s"));
 
     vis.svg.select(".x-axis").call(xAxis);
 
