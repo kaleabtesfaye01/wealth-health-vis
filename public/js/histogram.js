@@ -20,6 +20,8 @@ class Histogram {
     vis.svg = d3
       .select(`#${vis.parentElement}`)
       .append("svg")
+      .attr("width", vis.width)
+      .attr("height", vis.height)
       .attr("viewBox", [0, 0, vis.width, vis.height])
       .attr("style", "max-width: 100%; height: auto;");
 

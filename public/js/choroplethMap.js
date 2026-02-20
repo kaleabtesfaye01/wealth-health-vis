@@ -4,86 +4,83 @@ class ChoroplethMap {
       parentElement: _config.parentElement,
       geoData: _config.geoData,
       field: _config.field,
-      title: _config.title,
+      legendTitle: _config.legendTitle,
       year: _config.year,
-      containerWidth: _config.containerWidth || 900,
-      containerHeight: _config.containerHeight || 500,
-      margin: _config.margin || { top: 50, right: 20, bottom: 50, left: 20 },
-      legendRectWidth: 200,
-      legendRectHeight: 12,
+      width: 980,
+      marginTop: 60,
+      legendWidth: 260,
+      legendHeight: 12,
     };
 
+    this.gradientId = `legend-gradient-${this.config.parentElement}`;
     this.initVis();
   }
 
   initVis() {
     const vis = this;
 
-    vis.width =
-      vis.config.containerWidth -
-      vis.config.margin.left -
-      vis.config.margin.right;
+    vis.height = vis.config.width / 2 + vis.config.marginTop;
 
-    vis.height =
-      vis.config.containerHeight -
-      vis.config.margin.top -
-      vis.config.margin.bottom;
-
+    // SVG
     vis.svg = d3
       .select(`#${vis.config.parentElement}`)
       .append("svg")
-      .attr("width", vis.config.containerWidth)
-      .attr("height", vis.config.containerHeight);
+      .attr("width", vis.config.width)
+      .attr("height", vis.height)
+      .attr("viewBox", [0, 0, vis.config.width, vis.height])
+      .style("max-width", "100%")
+      .style("height", "auto");
 
-    vis.chart = vis.svg
+    // Map group
+    vis.mapGroup = vis.svg
       .append("g")
-      .attr(
-        "transform",
-        `translate(${vis.config.margin.left},${vis.config.margin.top})`,
-      );
+      .attr("transform", `translate(0, ${vis.config.marginTop})`);
 
-    // Title
-    vis.svg
-      .append("text")
-      .attr("class", "chart-title")
-      .attr("x", vis.config.containerWidth / 2)
-      .attr("y", 25)
-      .attr("text-anchor", "middle")
-      .style("font-weight", "bold")
-      .text(`${vis.config.title} (${vis.config.year})`);
-
-    // Projection & Path
+    // Projection
     vis.projection = d3.geoNaturalEarth1();
-    vis.geoPath = d3.geoPath().projection(vis.projection);
+    vis.path = d3.geoPath().projection(vis.projection);
 
     // Color scale
-    vis.colorScale = d3.scaleSequential().interpolator(d3.interpolateBlues);
+    vis.colorScale = d3.scaleSequential(d3.interpolateYlGnBu);
 
-    // Legend group
-    vis.legend = vis.svg
+    // ========================
+    // Legend
+    // ========================
+    vis.legendGroup = vis.svg
       .append("g")
-      .attr(
-        "transform",
-        `translate(${vis.config.containerWidth / 2 - 90}, ${
-          vis.config.containerHeight - 40
-        })`,
-      );
+      .attr("transform", `translate(40, ${vis.config.marginTop - 40})`);
 
+    // Legend title
+    vis.legendTitleText = vis.legendGroup
+      .append("text")
+      .attr("class", "legend-title")
+      .attr("x", 0)
+      .attr("y", 0)
+      .style("font-size", "13px")
+      .style("font-weight", "500");
+
+    // Gradient
     vis.defs = vis.svg.append("defs");
 
     vis.linearGradient = vis.defs
       .append("linearGradient")
-      .attr("id", "legend-gradient");
+      .attr("id", vis.gradientId)
+      .attr("x1", "0%")
+      .attr("x2", "100%");
 
-    vis.legendRect = vis.legend
+    // Gradient bar
+    vis.legendRect = vis.legendGroup
       .append("rect")
-      .attr("width", vis.config.legendRectWidth)
-      .attr("height", vis.config.legendRectHeight)
-      .attr("fill", "url(#legend-gradient)");
+      .attr("x", 0)
+      .attr("y", 10)
+      .attr("width", vis.config.legendWidth)
+      .attr("height", vis.config.legendHeight)
+      .attr("fill", `url(#${vis.gradientId})`);
 
-    vis.legendAxisGroup = vis.legend
+    // Axis group
+    vis.legendAxisGroup = vis.legendGroup
       .append("g")
-      .attr("transform", `translate(0, ${vis.config.legendRectHeight})`);
+      .attr("transform", `translate(0, ${10 + vis.config.legendHeight})`);
 
     vis.updateVis();
   }
@@ -93,65 +90,79 @@ class ChoroplethMap {
 
     const values = vis.config.geoData.features
       .map((d) => d.properties[vis.config.field])
-      .filter((d) => d !== undefined && !isNaN(d));
+      .filter((d) => d != null && !isNaN(d));
 
     const extent = d3.extent(values);
 
-    vis.colorScale.domain(extent);
+    if (!extent || extent[0] == null) return;
 
+    vis.colorScale.domain(extent);
     vis.renderVis(extent);
   }
 
   renderVis(extent) {
     const vis = this;
 
-    vis.projection.fitSize([vis.width, vis.height], vis.config.geoData);
+    // Fit projection
+    vis.projection.fitSize(
+      [vis.config.width, vis.height - vis.config.marginTop],
+      vis.config.geoData,
+    );
 
-    // Draw countries
-    vis.chart
+    // ========================
+    // DRAW MAP
+    // ========================
+    vis.mapGroup
       .selectAll(".country")
       .data(vis.config.geoData.features)
       .join("path")
       .attr("class", "country")
-      .attr("d", vis.geoPath)
+      .attr("d", vis.path)
+      .attr("stroke", "#ccc")
       .attr("fill", (d) => {
         const value = d.properties[vis.config.field];
-        return value ? vis.colorScale(value) : "url(#lightstripe)";
-      })
-      .attr("stroke", "#ccc");
+        return value != null ? vis.colorScale(value) : "url(#lightstripe)";
+      });
 
-    // -------- Legend --------
+    // ========================
+    // LEGEND
+    // ========================
+    vis.legendTitleText.text(`${vis.config.legendTitle} (${vis.config.year})`);
+
     const legendScale = d3
       .scaleLinear()
       .domain(extent)
-      .range([0, vis.config.legendRectWidth]);
+      .range([0, vis.config.legendWidth]);
 
     const legendAxis = d3
       .axisBottom(legendScale)
       .ticks(5)
-      .tickFormat(d3.format(".3s"));
+      .tickSize(-vis.config.legendHeight - 2)
+      .tickFormat(d3.format("~s"));
+
+    // Gradient stops
+    const stops = d3.range(0, 1.01, 0.02).map((t) => ({
+      offset: `${t * 100}%`,
+      color: vis.colorScale(extent[0] + t * (extent[1] - extent[0])),
+    }));
 
     vis.linearGradient
       .selectAll("stop")
-      .data([
-        { offset: "0%", color: d3.interpolateBlues(0) },
-        { offset: "100%", color: d3.interpolateBlues(1) },
-      ])
+      .data(stops)
       .join("stop")
       .attr("offset", (d) => d.offset)
       .attr("stop-color", (d) => d.color);
 
     vis.legendAxisGroup.call(legendAxis);
+
+    // Clean axis style
+    vis.legendAxisGroup.select(".domain").remove();
+    vis.legendAxisGroup.selectAll("text").style("font-size", "11px");
   }
 
-  setField(newField, newTitle) {
+  setField(newField, newLegendTitle) {
     this.config.field = newField;
-    this.config.title = newTitle;
-
-    this.svg
-      .select(".chart-title")
-      .text(`${this.config.title} (${this.config.year})`);
-
+    this.config.legendTitle = newLegendTitle;
     this.updateVis();
   }
 }

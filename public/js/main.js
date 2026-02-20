@@ -4,28 +4,34 @@ Promise.all([
   ),
   d3.csv("../../data/processed/level1_data.csv"),
 ])
-  .then((data) => {
+  .then(([geoData, countryData]) => {
     console.log("Data loaded successfully");
 
-    geoData = data[0];
-    countryData = data[1];
-
+    // Parse numeric values
     countryData.forEach((d) => {
       d.gdp = +d["GDP per capita"];
       d.lifeExpectancy = +d["Life expectancy"];
     });
 
-    geoData.features.forEach((d) => {
-      for (let i = 0; i < countryData.length; i++) {
-        if (d.id === countryData[i].Code) {
-          d.properties.gdp = countryData[i].gdp;
-          d.properties.lifeExpectancy = countryData[i].lifeExpectancy;
-        }
+    // Merge CSV into GeoJSON (faster lookup using Map)
+    const dataMap = new Map();
+    countryData.forEach((d) => {
+      dataMap.set(d.Code, d);
+    });
+
+    geoData.features.forEach((feature) => {
+      const match = dataMap.get(feature.id);
+      if (match) {
+        feature.properties.gdp = match.gdp;
+        feature.properties.lifeExpectancy = match.lifeExpectancy;
       }
     });
 
     const YEAR = 2022;
 
+    // =============================
+    // HISTOGRAMS
+    // =============================
     new Histogram({
       parentElement: "gdp-hist",
       data: countryData,
@@ -44,31 +50,38 @@ Promise.all([
       year: YEAR,
     });
 
+    // =============================
+    // SCATTERPLOT
+    // =============================
     new Scatterplot({
       parentElement: "scatterplot",
       data: countryData,
       xField: "lifeExpectancy",
       yField: "gdp",
-      title: "Relationship Between Life Expectancy and GDP per Capita",
+      title: "Life Expectancy vs GDP per Capita",
       xLabel: "Life Expectancy (Years) →",
       yLabel: "↑ GDP per Capita (USD)",
       year: YEAR,
     });
 
+    // =============================
+    // CHOROPLETH
+    // =============================
     const choropleth = new ChoroplethMap({
       parentElement: "choropleth-map",
       geoData: geoData,
       field: "gdp",
-      title: "GDP per Capita Across Countries",
       year: YEAR,
+      legendTitle: "GDP per Capita (USD)",
     });
 
+    // Toggle buttons
     d3.select("#btn-gdp").on("click", () => {
-      choropleth.setField("gdp", "GDP per Capita Across Countries");
+      choropleth.setField("gdp", "GDP per Capita (USD)");
     });
 
     d3.select("#btn-life").on("click", () => {
-      choropleth.setField("lifeExpectancy", "Life Expectancy Across Countries");
+      choropleth.setField("lifeExpectancy", "Life Expectancy (Years)");
     });
   })
   .catch((error) => {
