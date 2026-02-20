@@ -47,11 +47,11 @@ Promise.all([
     new Scatterplot({
       parentElement: "scatterplot",
       data: countryData,
-      xField: "gdp",
-      yField: "lifeExpectancy",
-      title: "Relationship Between GDP per Capita and Life Expectancy",
-      xLabel: "GDP per Capita",
-      yLabel: "Life Expectancy",
+      xField: "lifeExpectancy",
+      yField: "gdp",
+      title: "Relationship Between Life Expectancy and GDP per Capita",
+      xLabel: "Life Expectancy (Years) →",
+      yLabel: "↑ GDP per Capita (USD)",
       year: YEAR,
     });
 
