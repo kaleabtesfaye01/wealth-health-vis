@@ -1,168 +1,156 @@
 class ChoroplethMap {
-  constructor(_config) {
-    this.config = {
-      parentElement: _config.parentElement,
-      geoData: _config.geoData,
-      field: _config.field,
-      legendTitle: _config.legendTitle,
-      year: _config.year,
-      width: 980,
-      marginTop: 60,
-      legendWidth: 260,
-      legendHeight: 12,
-    };
-
-    this.gradientId = `legend-gradient-${this.config.parentElement}`;
+  constructor(config) {
+    this.config = config;
+    this.gradientId = `${this.config.parentElement}-legend-gradient`;
     this.initVis();
+    window.addEventListener("resize", () => this.resize());
   }
 
   initVis() {
-    const vis = this;
+    const container = d3.select(`#${this.config.parentElement}`);
+    const bounds = container.node().getBoundingClientRect();
+    this.width = bounds.width;
+    this.height = bounds.height;
 
-    vis.height = vis.config.width / 2 + vis.config.marginTop;
-
-    // SVG
-    vis.svg = d3
-      .select(`#${vis.config.parentElement}`)
+    this.svg = container
       .append("svg")
-      .attr("width", vis.config.width)
-      .attr("height", vis.height)
-      .attr("viewBox", [0, 0, vis.config.width, vis.height])
-      .style("max-width", "100%")
-      .style("height", "auto");
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .attr("viewBox", `0 0 ${this.width} ${this.height}`);
 
-    // Map group
-    vis.mapGroup = vis.svg
-      .append("g")
-      .attr("transform", `translate(0, ${vis.config.marginTop})`);
+    this.mapGroup = this.svg.append("g");
+    this.legendGroup = this.svg.append("g");
 
-    // Projection
-    vis.projection = d3.geoNaturalEarth1();
-    vis.path = d3.geoPath().projection(vis.projection);
+    this.projection = d3.geoNaturalEarth1();
+    this.path = d3.geoPath().projection(this.projection);
 
-    // Color scale
-    vis.colorScale = d3.scaleSequential(d3.interpolateYlGnBu);
-
-    // ========================
-    // Legend
-    // ========================
-    vis.legendGroup = vis.svg
-      .append("g")
-      .attr("transform", `translate(40, ${vis.config.marginTop - 40})`);
-
-    // Legend title
-    vis.legendTitleText = vis.legendGroup
-      .append("text")
-      .attr("class", "legend-title")
-      .attr("x", 0)
-      .attr("y", 0)
-      .style("font-size", "13px")
-      .style("font-weight", "500");
-
-    // Gradient
-    vis.defs = vis.svg.append("defs");
-
-    vis.linearGradient = vis.defs
-      .append("linearGradient")
-      .attr("id", vis.gradientId)
-      .attr("x1", "0%")
-      .attr("x2", "100%");
-
-    // Gradient bar
-    vis.legendRect = vis.legendGroup
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", 10)
-      .attr("width", vis.config.legendWidth)
-      .attr("height", vis.config.legendHeight)
-      .attr("fill", `url(#${vis.gradientId})`);
-
-    // Axis group
-    vis.legendAxisGroup = vis.legendGroup
-      .append("g")
-      .attr("transform", `translate(0, ${10 + vis.config.legendHeight})`);
-
-    vis.updateVis();
+    this.updateVis();
   }
 
   updateVis() {
-    const vis = this;
+    const values = this.config.geoData.features.map(
+      (d) => d.properties[this.config.field],
+    );
 
-    const values = vis.config.geoData.features
-      .map((d) => d.properties[vis.config.field])
-      .filter((d) => d != null && !isNaN(d));
+    if (values.length === 0) return;
 
-    const extent = d3.extent(values);
+    const [rawMin, rawMax] = d3.extent(values);
+    const min = rawMin;
+    const max = rawMax === rawMin ? rawMax + 1 : rawMax;
+    const median = d3.median(values);
+    const canUseLog = min > 0 && Number.isFinite(median) && median > 0;
+    const skewRatio = canUseLog ? max / median : 0;
 
-    if (!extent || extent[0] == null) return;
+    this.scaleType = canUseLog && skewRatio > 4 ? "log" : "linear";
 
-    vis.colorScale.domain(extent);
-    vis.renderVis(extent);
+    this.colorScale =
+      this.scaleType === "log"
+        ? d3.scaleSequentialLog(d3.interpolateBlues).domain([min, max])
+        : d3.scaleSequential(d3.interpolateYlOrRd).domain([min, max]);
+
+    this.renderVis([min, max]);
   }
 
   renderVis(extent) {
-    const vis = this;
+    const padding = 20;
+    const mapWidth = Math.max(10, this.width - padding);
+    const mapHeight = Math.max(10, this.height - 60);
 
-    // Fit projection
-    vis.projection.fitSize(
-      [vis.config.width, vis.height - vis.config.marginTop],
-      vis.config.geoData,
-    );
+    this.projection.fitSize([mapWidth, mapHeight], this.config.geoData);
 
-    // ========================
-    // DRAW MAP
-    // ========================
-    vis.mapGroup
-      .selectAll(".country")
-      .data(vis.config.geoData.features)
+    this.mapGroup
+      .attr("transform", `translate(${padding},${padding})`)
+      .selectAll("path")
+      .data(this.config.geoData.features)
       .join("path")
-      .attr("class", "country")
-      .attr("d", vis.path)
-      .attr("stroke", "#ccc")
+      .attr("d", this.path)
       .attr("fill", (d) => {
-        const value = d.properties[vis.config.field];
-        return value != null ? vis.colorScale(value) : "url(#lightstripe)";
-      });
+        const v = d.properties[this.config.field];
+        return Number.isFinite(v) ? this.colorScale(v) : "#e5e7eb";
+      })
+      .attr("stroke", "#ffffff")
+      .attr("stroke-width", 0.8);
 
-    // ========================
-    // LEGEND
-    // ========================
-    vis.legendTitleText.text(`${vis.config.legendTitle} (${vis.config.year})`);
-
-    const legendScale = d3
-      .scaleLinear()
-      .domain(extent)
-      .range([0, vis.config.legendWidth]);
-
-    const legendAxis = d3
-      .axisBottom(legendScale)
-      .ticks(5)
-      .tickSize(-vis.config.legendHeight - 2)
-      .tickFormat(d3.format("~s"));
-
-    // Gradient stops
-    const stops = d3.range(0, 1.01, 0.02).map((t) => ({
-      offset: `${t * 100}%`,
-      color: vis.colorScale(extent[0] + t * (extent[1] - extent[0])),
-    }));
-
-    vis.linearGradient
-      .selectAll("stop")
-      .data(stops)
-      .join("stop")
-      .attr("offset", (d) => d.offset)
-      .attr("stop-color", (d) => d.color);
-
-    vis.legendAxisGroup.call(legendAxis);
-
-    // Clean axis style
-    vis.legendAxisGroup.select(".domain").remove();
-    vis.legendAxisGroup.selectAll("text").style("font-size", "11px");
+    this.renderLegend(extent);
   }
 
-  setField(newField, newLegendTitle) {
-    this.config.field = newField;
-    this.config.legendTitle = newLegendTitle;
+  renderLegend(extent) {
+    const legendWidth = 220;
+    const legendHeight = 10;
+    const min = extent[0];
+    const max = extent[1];
+
+    this.legendGroup.selectAll("*").remove();
+
+    const defs = this.svg.selectAll("defs").data([null]).join("defs");
+    const gradient = defs
+      .selectAll(`linearGradient#${this.gradientId}`)
+      .data([null])
+      .join("linearGradient")
+      .attr("id", this.gradientId)
+      .attr("x1", "0%")
+      .attr("x2", "100%");
+    gradient.selectAll("stop").remove();
+
+    d3.range(0, 1.01, 0.1).forEach((t) => {
+      const stopValue =
+        this.scaleType === "log"
+          ? min * Math.pow(max / min, t)
+          : min + t * (max - min);
+      gradient
+        .append("stop")
+        .attr("offset", `${t * 100}%`)
+        .attr("stop-color", this.colorScale(stopValue));
+    });
+
+    this.legendGroup.attr(
+      "transform",
+      `translate(${this.width - legendWidth - 30}, ${this.height - 30})`,
+    );
+
+    this.legendGroup
+      .append("rect")
+      .attr("width", legendWidth)
+      .attr("height", legendHeight)
+      .attr("rx", 4)
+      .attr("fill", `url(#${this.gradientId})`);
+
+    const scale =
+      this.scaleType === "log"
+        ? d3.scaleLog().domain([min, max]).range([0, legendWidth])
+        : d3.scaleLinear().domain([min, max]).range([0, legendWidth]);
+
+    this.legendGroup
+      .append("g")
+      .attr("transform", `translate(0, ${legendHeight})`)
+      .call(d3.axisBottom(scale).ticks(5, "~s"))
+      .select(".domain")
+      .remove();
+
+    if (this.config.legendTitle) {
+      this.legendGroup
+        .append("text")
+        .attr("x", 0)
+        .attr("y", -6)
+        .attr("font-size", 11)
+        .attr("font-weight", 600)
+        .attr("fill", "#334155")
+        .text(this.config.legendTitle);
+    }
+  }
+
+  setField(field, legendTitle) {
+    this.config.field = field;
+    if (legendTitle) this.config.legendTitle = legendTitle;
+    this.updateVis();
+  }
+
+  resize() {
+    const container = d3.select(`#${this.config.parentElement}`);
+    const bounds = container.node().getBoundingClientRect();
+    this.width = bounds.width;
+    this.height = bounds.height;
+    this.svg.attr("viewBox", `0 0 ${this.width} ${this.height}`);
     this.updateVis();
   }
 }

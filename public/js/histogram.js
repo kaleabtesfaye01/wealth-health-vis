@@ -1,124 +1,131 @@
 class Histogram {
-  constructor({ parentElement, data, field, title, xLabel, year }) {
-    this.parentElement = parentElement;
-    this.data = data;
-    this.field = field;
-    this.title = title;
-    this.xLabel = xLabel;
-    this.year = year;
-
+  constructor(config) {
+    this.config = config;
     this.initVis();
+    window.addEventListener("resize", () => this.resize());
   }
 
   initVis() {
-    const vis = this;
+    const container = d3.select(`#${this.config.parentElement}`);
+    const bounds = container.node().getBoundingClientRect();
 
-    vis.margin = { top: 30, right: 20, bottom: 30, left: 40 };
-    vis.width = 960;
-    vis.height = 500;
+    const margin = { top: 14, right: 14, bottom: 44, left: 52 };
+    const width = bounds.width - margin.left - margin.right;
+    const height = bounds.height - margin.top - margin.bottom;
 
-    vis.svg = d3
-      .select(`#${vis.parentElement}`)
+    const svg = container
       .append("svg")
-      .attr("width", vis.width)
-      .attr("height", vis.height)
-      .attr("viewBox", [0, 0, vis.width, vis.height])
-      .attr("style", "max-width: 100%; height: auto;");
-
-    vis.x = d3
-      .scaleLinear()
-      .range([vis.margin.left, vis.width - vis.margin.right]);
-    vis.y = d3
-      .scaleLinear()
-      .range([vis.height - vis.margin.bottom, vis.margin.top]);
-
-    // Chart Title
-    vis.svg
-      .append("text")
-      .attr("class", "chart-title")
-      .attr("x", vis.width / 2)
-      .attr("y", vis.margin.top - 10)
-      .attr("text-anchor", "middle")
-      .attr("font-weight", "bold")
-      .text(vis.title);
-
-    // Year subtitle
-    vis.svg
-      .append("text")
-      .attr("class", "chart-year")
-      .attr("x", vis.width / 2)
-      .attr("y", vis.margin.top + 10)
-      .attr("text-anchor", "middle")
-      .attr("font-size", "12px")
-      .text(`Year: ${vis.year}`);
-
-    // X-axis label
-    vis.svg
+      .attr("width", "100%")
+      .attr("height", "100%")
       .append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0,${vis.height - vis.margin.bottom})`)
-      .call((g) =>
-        g
-          .append("text")
-          .attr("class", "x-label")
-          .attr("x", vis.width)
-          .attr("y", vis.margin.bottom - 2)
-          .attr("fill", "currentColor")
-          .attr("text-anchor", "end")
-          .text(vis.xLabel),
-      );
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Y-axis label
-    vis.svg
+    const values = this.config.data
+      .map((d) => d[this.config.field])
+      .filter((v) => Number.isFinite(v));
+
+    if (values.length === 0) return;
+
+    const barColor = this.config.barColor || this.config.color || "#0a84ff";
+    const barStroke = d3.color(barColor)?.darker(0.8)?.formatHex() || "#1e293b";
+    const x = d3
+      .scaleLinear()
+      .domain(d3.extent(values))
+      .nice()
+      .range([0, width]);
+
+    const thresholdCount =
+      this.config.thresholds ||
+      Math.max(12, Math.min(28, Math.round(Math.sqrt(values.length))));
+    const bins = d3
+      .bin()
+      .domain(x.domain())
+      .thresholds(thresholdCount)(values);
+
+    const y = d3
+      .scaleLinear()
+      .domain([0, d3.max(bins, (d) => d.length) * 1.08])
+      .nice()
+      .range([height, 0]);
+
+    // Plot background improves contrast against the panel.
+    svg
+      .append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", width)
+      .attr("height", height)
+      .attr("fill", "#f8fafc")
+      .attr("stroke", "#e2e8f0")
+      .attr("rx", 6);
+
+    svg
       .append("g")
-      .attr("class", "y-axis")
-      .attr("transform", `translate(${vis.margin.left},0)`)
+      .attr("class", "y-grid")
+      .call(d3.axisLeft(y).ticks(5).tickSize(-width).tickFormat(""))
       .call((g) => g.select(".domain").remove())
       .call((g) =>
         g
-          .append("text")
-          .attr("class", "y-label")
-          .attr("x", -vis.margin.left)
-          .attr("y", vis.margin.top - 15)
-          .attr("fill", "currentColor")
-          .attr("text-anchor", "start")
-          .text("↑ Number of Countries"),
+          .selectAll("line")
+          .attr("stroke", "#e2e8f0")
+          .attr("stroke-opacity", 0.9),
       );
 
-    vis.updateVis();
+    svg
+      .append("g")
+      .attr("class", "bars")
+      .selectAll("rect")
+      .data(bins)
+      .join("rect")
+      .attr("x", (d) => x(d.x0))
+      .attr("y", (d) => y(d.length))
+      .attr("width", (d) => Math.max(0, x(d.x1) - x(d.x0) - 1))
+      .attr("height", (d) => height - y(d.length))
+      .attr("fill", barColor)
+      .attr("stroke", barStroke)
+      .attr("stroke-width", 0.5)
+      .attr("fill-opacity", 0.95);
+
+    svg
+      .append("g")
+      .attr("transform", `translate(0,${height})`)
+      .call(d3.axisBottom(x).ticks(6, "~s"))
+      .call((g) => g.select(".domain").attr("stroke", "#64748b"))
+      .call((g) =>
+        g
+          .selectAll("text")
+          .attr("fill", "#334155")
+          .attr("font-size", 11)
+          .attr("font-weight", 500),
+      );
+
+    svg
+      .append("g")
+      .call(d3.axisLeft(y).ticks(5))
+      .call((g) => g.select(".domain").attr("stroke", "#64748b"))
+      .call((g) =>
+        g
+          .selectAll("text")
+          .attr("fill", "#334155")
+          .attr("font-size", 11)
+          .attr("font-weight", 500),
+      );
+
+    if (this.config.xLabel) {
+      svg
+        .append("text")
+        .attr("x", width)
+        .attr("y", height + margin.bottom - 8)
+        .attr("text-anchor", "end")
+        .attr("fill", "#334155")
+        .attr("font-size", 11)
+        .attr("font-weight", 600)
+        .text(this.config.xLabel);
+    }
   }
 
-  updateVis() {
-    const vis = this;
-
-    const values = vis.data.map((d) => d[vis.field]);
-
-    vis.bins = d3.bin().thresholds(40)(values);
-
-    vis.x.domain([vis.bins[0].x0, vis.bins[vis.bins.length - 1].x1]);
-
-    vis.y.domain([0, d3.max(vis.bins, (d) => d.length)]);
-
-    vis.svg
-      .append("g")
-      .attr("fill", "steelblue")
-      .selectAll()
-      .data(vis.bins)
-      .join("rect")
-      .attr("x", (d) => vis.x(d.x0) + 1)
-      .attr("width", (d) => vis.x(d.x1) - vis.x(d.x0) - 1)
-      .attr("y", (d) => vis.y(d.length))
-      .attr("height", (d) => vis.y(0) - vis.y(d.length));
-
-    const xAxis = d3
-      .axisBottom(vis.x)
-      .ticks(vis.width / 80)
-      .tickSizeOuter(0);
-
-    const yAxis = d3.axisLeft(vis.y).ticks(vis.height / 40);
-
-    vis.svg.select(".x-axis").call(xAxis);
-
-    vis.svg.select(".y-axis").call(yAxis);
+  resize() {
+    d3.select(`#${this.config.parentElement}`).select("svg").remove();
+    this.initVis();
   }
 }

@@ -7,13 +7,13 @@ Promise.all([
   .then(([geoData, countryData]) => {
     console.log("Data loaded successfully");
 
-    // Parse numeric values
+    // Parse numeric values into a consistent in-memory schema.
     countryData.forEach((d) => {
-      d.gdp = +d["GDP per capita"];
+      d.gdpPerCapita = +d["GDP per capita"];
       d.lifeExpectancy = +d["Life expectancy"];
     });
 
-    // Merge CSV into GeoJSON (faster lookup using Map)
+    // Merge CSV into GeoJSON (faster lookup using Map).
     const dataMap = new Map();
     countryData.forEach((d) => {
       dataMap.set(d.Code, d);
@@ -22,7 +22,7 @@ Promise.all([
     geoData.features.forEach((feature) => {
       const match = dataMap.get(feature.id);
       if (match) {
-        feature.properties.gdp = match.gdp;
+        feature.properties.gdpPerCapita = match.gdpPerCapita;
         feature.properties.lifeExpectancy = match.lifeExpectancy;
       }
     });
@@ -33,21 +33,23 @@ Promise.all([
     // HISTOGRAMS
     // =============================
     new Histogram({
-      parentElement: "gdp-hist",
+      parentElement: "gdp-histogram",
       data: countryData,
-      field: "gdp",
+      field: "gdpPerCapita",
       title: "Distribution of GDP per Capita",
       xLabel: "GDP per Capita (USD) →",
       year: YEAR,
+      barColor: "#0a84ff",
     });
 
     new Histogram({
-      parentElement: "life-expectancy-hist",
+      parentElement: "life-histogram",
       data: countryData,
       field: "lifeExpectancy",
       title: "Distribution of Life Expectancy",
       xLabel: "Life Expectancy (Years) →",
       year: YEAR,
+      barColor: "#ff375f",
     });
 
     // =============================
@@ -56,12 +58,13 @@ Promise.all([
     new Scatterplot({
       parentElement: "scatterplot",
       data: countryData,
-      xField: "lifeExpectancy",
-      yField: "gdp",
+      xField: "gdpPerCapita",
+      yField: "lifeExpectancy",
       title: "Life Expectancy vs GDP per Capita",
-      xLabel: "Life Expectancy (Years) →",
-      yLabel: "↑ GDP per Capita (USD)",
+      xLabel: "GDP per Capita (USD) →",
+      yLabel: "↑ Life Expectancy (Years)",
       year: YEAR,
+      pointColor: "#30d158",
     });
 
     // =============================
@@ -70,18 +73,31 @@ Promise.all([
     const choropleth = new ChoroplethMap({
       parentElement: "choropleth-map",
       geoData: geoData,
-      field: "gdp",
+      field: "gdpPerCapita",
       year: YEAR,
       legendTitle: "GDP per Capita (USD)",
     });
 
-    // Toggle buttons
-    d3.select("#btn-gdp").on("click", () => {
-      choropleth.setField("gdp", "GDP per Capita (USD)");
-    });
+    const mapButtons = d3.selectAll(".map-buttons button");
 
-    d3.select("#btn-life").on("click", () => {
-      choropleth.setField("lifeExpectancy", "Life Expectancy (Years)");
+    const setActiveButton = (field) => {
+      mapButtons.classed("active", function () {
+        return d3.select(this).attr("data-field") === field;
+      });
+    };
+
+    setActiveButton("gdpPerCapita");
+
+    // Toggle choropleth field from button data attributes.
+    mapButtons.on("click", function () {
+      const field = d3.select(this).attr("data-field");
+      if (!field) return;
+      const legendTitle =
+        field === "lifeExpectancy"
+          ? "Life Expectancy (Years)"
+          : "GDP per Capita (USD)";
+      choropleth.setField(field, legendTitle);
+      setActiveButton(field);
     });
   })
   .catch((error) => {

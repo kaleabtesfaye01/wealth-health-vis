@@ -1,0 +1,70 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f6f8fb;
+  color: #0f172a;
+}
+
+#dashboard-grid {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 0.85fr 2.15fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.vis-panel {
+  position: relative;
+  background: white;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vis-panel h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 14px 16px 6px;
+}
+
+.vis-container {
+  flex: 1;
+  min-height: 0;
+}
+
+.map-buttons {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: white;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+  z-index: 10;
+}
+
+.map-buttons button {
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.map-buttons button.active {
+  background: #e2e8f0;
+  color: #0f172a;
+}

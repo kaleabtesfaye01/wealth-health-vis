@@ -1,132 +1,65 @@
 class Scatterplot {
-  constructor({
-    parentElement,
-    data,
-    xField,
-    yField,
-    title,
-    xLabel,
-    yLabel,
-    year,
-  }) {
-    this.parentElement = parentElement;
-    this.data = data;
-    this.xField = xField;
-    this.yField = yField;
-    this.title = title;
-    this.xLabel = xLabel;
-    this.yLabel = yLabel;
-    this.year = year;
-
+  constructor(config) {
+    this.config = config;
     this.initVis();
+    window.addEventListener("resize", () => this.resize());
   }
 
   initVis() {
-    const vis = this;
+    const container = d3.select(`#${this.config.parentElement}`);
+    const bounds = container.node().getBoundingClientRect();
 
-    vis.margin = { top: 35, right: 20, bottom: 35, left: 50 };
-    vis.width = 928;
-    vis.height = 600;
+    const margin = { top: 20, right: 20, bottom: 40, left: 55 };
+    const width = bounds.width - margin.left - margin.right;
+    const height = bounds.height - margin.top - margin.bottom;
+    const xField = this.config.xField;
+    const yField = this.config.yField;
 
-    vis.svg = d3
-      .select(`#${vis.parentElement}`)
+    const filteredData = this.config.data.filter(
+      (d) => Number.isFinite(d[xField]) && Number.isFinite(d[yField]),
+    );
+
+    if (filteredData.length === 0) return;
+
+    const svg = container
       .append("svg")
-      .attr("width", vis.width)
-      .attr("height", vis.height)
-      .attr("viewBox", [0, 0, vis.width, vis.height])
-      .attr("style", "max-width: 100%; height: auto;");
-
-    vis.x = d3
-      .scaleLinear()
-      .range([vis.margin.left, vis.width - vis.margin.right]);
-    vis.y = d3
-      .scaleLinear()
-      .range([vis.height - vis.margin.bottom, vis.margin.top]);
-
-    // Chart Title
-    vis.svg
-      .append("text")
-      .attr("class", "chart-title")
-      .attr("x", vis.width / 2)
-      .attr("y", vis.margin.top - 10)
-      .attr("text-anchor", "middle")
-      .attr("font-weight", "bold")
-      .text(vis.title);
-
-    // Year subtitle
-    vis.svg
-      .append("text")
-      .attr("class", "chart-year")
-      .attr("x", vis.width / 2)
-      .attr("y", vis.margin.top + 10)
-      .attr("text-anchor", "middle")
-      .attr("font-size", "12px")
-      .text(`Year: ${vis.year}`);
-
-    // X label
-    vis.svg
+      .attr("width", "100%")
+      .attr("height", "100%")
       .append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0,${vis.height - vis.margin.bottom})`)
-      .call((g) =>
-        g
-          .append("text")
-          .attr("class", "x-label")
-          .attr("x", vis.width)
-          .attr("y", vis.margin.bottom - 2)
-          .attr("fill", "currentColor")
-          .attr("text-anchor", "end")
-          .text(vis.xLabel),
-      );
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Y label
-    vis.svg
+    const x = d3
+      .scaleLinear()
+      .domain(d3.extent(filteredData, (d) => d[xField]))
+      .nice()
+      .range([0, width]);
+
+    const y = d3
+      .scaleLinear()
+      .domain(d3.extent(filteredData, (d) => d[yField]))
+      .nice()
+      .range([height, 0]);
+
+    svg
+      .selectAll("circle")
+      .data(filteredData)
+      .join("circle")
+      .attr("cx", (d) => x(d[xField]))
+      .attr("cy", (d) => y(d[yField]))
+      .attr("r", 4.2)
+      .attr("fill", this.config.pointColor || "#0ea5e9")
+      .attr("fill-opacity", 0.55);
+
+    svg
       .append("g")
-      .attr("class", "y-axis")
-      .attr("transform", `translate(${vis.margin.left},0)`)
-      .call((g) => g.select(".domain").remove())
-      .call((g) =>
-        g
-          .append("text")
-          .attr("class", "y-label")
-          .attr("x", -vis.margin.left)
-          .attr("y", vis.margin.top - 15)
-          .attr("fill", "currentColor")
-          .attr("text-anchor", "start")
-          .text(vis.yLabel),
-      );
+      .attr("transform", `translate(0,${height})`)
+      .call(d3.axisBottom(x).ticks(5, "~s"));
 
-    vis.updateVis();
+    svg.append("g").call(d3.axisLeft(y).ticks(5));
   }
 
-  updateVis() {
-    const vis = this;
-
-    vis.x.domain(d3.extent(vis.data, (d) => d[vis.xField])).nice();
-    vis.y.domain(d3.extent(vis.data, (d) => d[vis.yField])).nice();
-
-    vis.svg
-      .append("g")
-      .attr("stroke", "steelblue")
-      .attr("stroke-width", 1.5)
-      .attr("fill", "steelblue")
-      .attr("fill-opacity", 0.7)
-      .selectAll()
-      .data(vis.data)
-      .join("circle")
-      .attr("cx", (d) => vis.x(d[vis.xField]))
-      .attr("cy", (d) => vis.y(d[vis.yField]))
-      .attr("r", 3);
-
-    const xAxis = d3
-      .axisBottom(vis.x)
-      .ticks(vis.width / 80)
-      .tickSizeOuter(0);
-
-    const yAxis = d3.axisLeft(vis.y);
-
-    vis.svg.select(".x-axis").call(xAxis);
-
-    vis.svg.select(".y-axis").call(yAxis);
+  resize() {
+    d3.select(`#${this.config.parentElement}`).select("svg").remove();
+    this.initVis();
   }
 }

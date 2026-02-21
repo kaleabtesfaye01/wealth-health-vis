@@ -32,4 +32,11 @@ This project investigates how economic prosperity relates to population health o
 
 ## Level 2
 
-One choropleth map with button to toggle between Life Axpectancy and GDP per Capita
+One choropleth map with button to toggle between Life Expectancy and GDP per Capita
+Colors used and why?
+
+- #ff375f: for Histogram 2 (Life expectancy)
+- #0a84ff: for Histogram 1 (GDP per capita)
+- #30d158: for Scatterplot
+- InterpolatedBlues for logarithmic scales like GDP per Capita
+- interpolateYlOrRd for linear scales like Life Expectancy
