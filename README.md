@@ -40,3 +40,10 @@ Colors used and why?
 - #30d158: for Scatterplot
 - InterpolatedBlues for logarithmic scales like GDP per Capita
 - interpolateYlOrRd for linear scales like Life Expectancy
+
+## Level 3
+
+New data attributes:
+
+- Under-five mortality rate
+- Human Development Index
