@@ -47,3 +47,12 @@ New data attributes:
 
 - Under-five mortality rate
 - Human Development Index
+
+Same colors used as level 2.
+
+- Display 2 histograms with buttons:
+  - Histogram 1: Wealth attributes (GDP per capita and Human Development Index)
+  - Histogram 2: health attributes (Life Expectancy and Under-five mortality rate)
+
+- Display 1 choropleth map with buttons to toggle between all 4 attributes
+- Display 1 scatterplot where users can select x-axis and y-axis columns to see any correlation between any two attributes.

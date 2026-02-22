@@ -1,65 +1,115 @@
 class Scatterplot {
   constructor(config) {
     this.config = config;
+    this.margin = { top: 15, right: 15, bottom: 40, left: 50 };
     this.initVis();
-    window.addEventListener("resize", () => this.resize());
   }
 
   initVis() {
-    const container = d3.select(`#${this.config.parentElement}`);
-    const bounds = container.node().getBoundingClientRect();
+    let vis = this;
 
-    const margin = { top: 20, right: 20, bottom: 40, left: 55 };
-    const width = bounds.width - margin.left - margin.right;
-    const height = bounds.height - margin.top - margin.bottom;
-    const xField = this.config.xField;
-    const yField = this.config.yField;
+    // Create SVG and main group only once
+    vis.container = d3.select(`#${vis.config.parentElement}`);
 
-    const filteredData = this.config.data.filter(
-      (d) => Number.isFinite(d[xField]) && Number.isFinite(d[yField]),
-    );
-
-    if (filteredData.length === 0) return;
-
-    const svg = container
+    vis.svg = vis.container
       .append("svg")
       .attr("width", "100%")
-      .attr("height", "100%")
+      .attr("height", "100%");
+
+    vis.chart = vis.svg
       .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+      .attr("transform", `translate(${vis.margin.left},${vis.margin.top})`);
 
-    const x = d3
-      .scaleLinear()
-      .domain(d3.extent(filteredData, (d) => d[xField]))
-      .nice()
-      .range([0, width]);
+    // Initialize Scales
+    vis.xScale = d3.scaleLinear();
+    vis.yScale = d3.scaleLinear();
 
-    const y = d3
-      .scaleLinear()
-      .domain(d3.extent(filteredData, (d) => d[yField]))
-      .nice()
-      .range([height, 0]);
+    // Initialize Axes groups
+    vis.xAxisG = vis.chart.append("g").attr("class", "axis x-axis");
 
-    svg
-      .selectAll("circle")
-      .data(filteredData)
-      .join("circle")
-      .attr("cx", (d) => x(d[xField]))
-      .attr("cy", (d) => y(d[yField]))
-      .attr("r", 4.2)
-      .attr("fill", this.config.pointColor || "#0ea5e9")
-      .attr("fill-opacity", 0.55);
+    vis.yAxisG = vis.chart.append("g").attr("class", "axis y-axis");
 
-    svg
-      .append("g")
-      .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(x).ticks(5, "~s"));
+    // Add Axis Labels
+    vis.xLabel = vis.chart
+      .append("text")
+      .attr("class", "axis-label")
+      .attr("text-anchor", "end")
+      .attr("font-size", "10px")
+      .attr("fill", "#64748b");
 
-    svg.append("g").call(d3.axisLeft(y).ticks(5));
+    vis.yLabel = vis.chart
+      .append("text")
+      .attr("class", "axis-label")
+      .attr("text-anchor", "start")
+      .attr("font-size", "10px")
+      .attr("fill", "#64748b")
+      .attr("transform", "rotate(-90)")
+      .attr("y", -35);
+
+    vis.updateVis();
   }
 
-  resize() {
-    d3.select(`#${this.config.parentElement}`).select("svg").remove();
-    this.initVis();
+  updateVis() {
+    let vis = this;
+    const bounds = vis.container.node().getBoundingClientRect();
+    vis.width = bounds.width - vis.margin.left - vis.margin.right;
+    vis.height = bounds.height - vis.margin.top - vis.margin.bottom;
+
+    vis.displayData = vis.config.data.filter(
+      (d) =>
+        Number.isFinite(d[vis.config.xField]) &&
+        Number.isFinite(d[vis.config.yField]),
+    );
+
+    vis.xScale
+      .domain(d3.extent(vis.displayData, (d) => d[vis.config.xField]))
+      .range([0, vis.width])
+      .nice();
+
+    vis.yScale
+      .domain(d3.extent(vis.displayData, (d) => d[vis.config.yField]))
+      .range([vis.height, 0])
+      .nice();
+
+    vis.renderVis();
+  }
+
+  renderVis() {
+    let vis = this;
+
+    const circles = vis.chart.selectAll("circle").data(vis.displayData);
+
+    circles
+      .join("circle")
+      .transition()
+      .duration(800)
+      .ease(d3.easeCubicOut)
+      .attr("cx", (d) => vis.xScale(d[vis.config.xField]))
+      .attr("cy", (d) => vis.yScale(d[vis.config.yField]))
+      .attr("r", 4)
+      .attr("fill", vis.config.pointColor || "#30d158")
+      .attr("fill-opacity", 0.6)
+      .attr("stroke", vis.config.pointColor || "#30d158")
+      .attr("stroke-width", 1);
+
+    // Update Axes
+    vis.xAxisG
+      .attr("transform", `translate(0,${vis.height})`)
+      .transition()
+      .duration(800)
+      .call(d3.axisBottom(vis.xScale).ticks(vis.width < 300 ? 3 : 6, "~s"));
+
+    vis.yAxisG
+      .transition()
+      .duration(800)
+      .call(d3.axisLeft(vis.yScale).ticks(5, "~s"));
+
+    // Update Label Text/Position
+    vis.xLabel
+      .attr("x", vis.width)
+      .attr("y", vis.height + 35)
+      .text(vis.config.xLabel);
+
+    vis.yLabel.attr("x", -vis.height / 2).text(vis.config.yLabel);
   }
 }

@@ -1,131 +1,116 @@
 class Histogram {
   constructor(config) {
     this.config = config;
+    this.margin = { top: 15, right: 15, bottom: 45, left: 50 };
     this.initVis();
-    window.addEventListener("resize", () => this.resize());
   }
 
   initVis() {
-    const container = d3.select(`#${this.config.parentElement}`);
-    const bounds = container.node().getBoundingClientRect();
+    const vis = this;
+    vis.container = d3.select(`#${vis.config.parentElement}`);
 
-    const margin = { top: 14, right: 14, bottom: 44, left: 52 };
-    const width = bounds.width - margin.left - margin.right;
-    const height = bounds.height - margin.top - margin.bottom;
-
-    const svg = container
+    vis.svg = vis.container
       .append("svg")
       .attr("width", "100%")
-      .attr("height", "100%")
+      .attr("height", "100%");
+
+    vis.chart = vis.svg
       .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+      .attr("transform", `translate(${vis.margin.left},${vis.margin.top})`);
 
-    const values = this.config.data
-      .map((d) => d[this.config.field])
-      .filter((v) => Number.isFinite(v));
+    // Scales
+    vis.xScale = d3.scaleLinear();
+    vis.yScale = d3.scaleLinear();
 
-    if (values.length === 0) return;
+    // Axes groups
+    vis.xAxisG = vis.chart.append("g").attr("class", "axis x-axis");
+    vis.yAxisG = vis.chart.append("g").attr("class", "axis y-axis");
 
-    const barColor = this.config.barColor || this.config.color || "#0a84ff";
-    const barStroke = d3.color(barColor)?.darker(0.8)?.formatHex() || "#1e293b";
-    const x = d3
-      .scaleLinear()
-      .domain(d3.extent(values))
-      .nice()
-      .range([0, width]);
+    // Axis Label
+    vis.xLabelText = vis.chart
+      .append("text")
+      .attr("class", "axis-label")
+      .attr("text-anchor", "end")
+      .attr("fill", "#64748b")
+      .attr("font-size", "10px")
+      .attr("font-weight", "600");
 
-    const thresholdCount =
-      this.config.thresholds ||
-      Math.max(12, Math.min(28, Math.round(Math.sqrt(values.length))));
-    const bins = d3
-      .bin()
-      .domain(x.domain())
-      .thresholds(thresholdCount)(values);
-
-    const y = d3
-      .scaleLinear()
-      .domain([0, d3.max(bins, (d) => d.length) * 1.08])
-      .nice()
-      .range([height, 0]);
-
-    // Plot background improves contrast against the panel.
-    svg
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", width)
-      .attr("height", height)
-      .attr("fill", "#f8fafc")
-      .attr("stroke", "#e2e8f0")
-      .attr("rx", 6);
-
-    svg
-      .append("g")
-      .attr("class", "y-grid")
-      .call(d3.axisLeft(y).ticks(5).tickSize(-width).tickFormat(""))
-      .call((g) => g.select(".domain").remove())
-      .call((g) =>
-        g
-          .selectAll("line")
-          .attr("stroke", "#e2e8f0")
-          .attr("stroke-opacity", 0.9),
-      );
-
-    svg
-      .append("g")
-      .attr("class", "bars")
-      .selectAll("rect")
-      .data(bins)
-      .join("rect")
-      .attr("x", (d) => x(d.x0))
-      .attr("y", (d) => y(d.length))
-      .attr("width", (d) => Math.max(0, x(d.x1) - x(d.x0) - 1))
-      .attr("height", (d) => height - y(d.length))
-      .attr("fill", barColor)
-      .attr("stroke", barStroke)
-      .attr("stroke-width", 0.5)
-      .attr("fill-opacity", 0.95);
-
-    svg
-      .append("g")
-      .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(x).ticks(6, "~s"))
-      .call((g) => g.select(".domain").attr("stroke", "#64748b"))
-      .call((g) =>
-        g
-          .selectAll("text")
-          .attr("fill", "#334155")
-          .attr("font-size", 11)
-          .attr("font-weight", 500),
-      );
-
-    svg
-      .append("g")
-      .call(d3.axisLeft(y).ticks(5))
-      .call((g) => g.select(".domain").attr("stroke", "#64748b"))
-      .call((g) =>
-        g
-          .selectAll("text")
-          .attr("fill", "#334155")
-          .attr("font-size", 11)
-          .attr("font-weight", 500),
-      );
-
-    if (this.config.xLabel) {
-      svg
-        .append("text")
-        .attr("x", width)
-        .attr("y", height + margin.bottom - 8)
-        .attr("text-anchor", "end")
-        .attr("fill", "#334155")
-        .attr("font-size", 11)
-        .attr("font-weight", 600)
-        .text(this.config.xLabel);
-    }
+    vis.updateVis();
   }
 
-  resize() {
-    d3.select(`#${this.config.parentElement}`).select("svg").remove();
-    this.initVis();
+  updateVis() {
+    const vis = this;
+
+    const bounds = vis.container.node().getBoundingClientRect();
+    vis.width = bounds.width - vis.margin.left - vis.margin.right;
+    vis.height = bounds.height - vis.margin.top - vis.margin.bottom;
+
+    let thresholdCount;
+    if (vis.width < 300) {
+      thresholdCount = 10;
+    } else if (vis.width < 500) {
+      thresholdCount = 20;
+    } else if (vis.width < 700) {
+      thresholdCount = 30;
+    } else {
+      thresholdCount = 40;
+    }
+    const values = vis.config.data
+      .map((d) => d[vis.config.field])
+      .filter((v) => Number.isFinite(v));
+
+    vis.xScale.domain(d3.extent(values)).nice().range([0, vis.width]);
+
+    const bins = d3
+      .bin()
+      .domain(vis.xScale.domain())
+      .thresholds(vis.xScale.ticks(thresholdCount))(values);
+
+    vis.yScale
+      .domain([0, d3.max(bins, (d) => d.length)])
+      .nice()
+      .range([vis.height, 0]);
+
+    vis.renderVis(bins);
+  }
+
+  renderVis(bins) {
+    const vis = this;
+    const barColor = vis.config.barColor || "#3b82f6";
+
+    // Bind data to bars
+    const bars = vis.chart.selectAll(".bar").data(bins);
+
+    bars
+      .join("rect")
+      .attr("class", "bar")
+      .transition()
+      .duration(600)
+      .attr("x", (d) => vis.xScale(d.x0) + 1)
+      .attr("y", (d) => vis.yScale(d.length))
+      .attr("width", (d) =>
+        Math.max(0, vis.xScale(d.x1) - vis.xScale(d.x0) - 1),
+      )
+      .attr("height", (d) => vis.height - vis.yScale(d.length))
+      .attr("fill", barColor)
+      .attr("fill-opacity", 0.8);
+
+    // Update Axes
+    vis.xAxisG
+      .attr("transform", `translate(0,${vis.height})`)
+      .transition()
+      .duration(600)
+      .call(d3.axisBottom(vis.xScale).ticks(5, "~s"));
+
+    vis.yAxisG
+      .transition()
+      .duration(600)
+      .call(d3.axisLeft(vis.yScale).ticks(5));
+
+    // Update Label
+    vis.xLabelText
+      .attr("x", vis.width)
+      .attr("y", vis.height + 35)
+      .text(vis.config.xLabel || "");
   }
 }

@@ -11,30 +11,69 @@
 
 <body>
     <div id="dashboard-grid">
-
         <section class="vis-panel">
-            <h3>GDP per Capita</h3>
+            <h3>Wealth & Development</h3>
+            <div class="histogram-controls" data-target="gdp-histogram">
+                <button data-field="gdpPerCapita" class="active">GDP</button>
+                <button data-field="humanDevelopmentIndex">HDI</button>
+            </div>
             <div id="gdp-histogram" class="vis-container"></div>
         </section>
 
         <section class="vis-panel map-panel">
+            <h3>Global Distribution</h3>
             <div class="map-buttons">
                 <button data-field="gdpPerCapita" class="active">GDP</button>
-                <button data-field="lifeExpectancy">Life</button>
+                <button data-field="lifeExpectancy">Life Expectancy</button>
+                <button data-field="humanDevelopmentIndex">HDI</button>
+                <button data-field="infantMortalityRate">Infant Mortality</button>
             </div>
+            <svg height="5" width="5" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                <defs>
+                    <pattern id="lightstripe" patternUnits="userSpaceOnUse" width="5" height="5">
+                        <image
+                            xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc1JyBoZWlnaHQ9JzUnPgogIDxyZWN0IHdpZHRoPSc1JyBoZWlnaHQ9JzUnIGZpbGw9J3doaXRlJy8+CiAgPHBhdGggZD0nTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVonIHN0cm9rZT0nIzg4OCcgc3Ryb2tlLXdpZHRoPScxJy8+Cjwvc3ZnPg=="
+                            x="0" y="0" width="5" height="5"></image>
+                    </pattern>
+                </defs>
+            </svg>
+
             <div id="choropleth-map" class="vis-container"></div>
         </section>
 
         <section class="vis-panel">
-            <h3>Life Expectancy</h3>
+            <h3>Health Metrics</h3>
+            <div class="histogram-controls" data-target="life-histogram">
+                <button data-field="lifeExpectancy" class="active">Life Expectancy</button>
+                <button data-field="infantMortalityRate">Infant Mortality</button>
+            </div>
             <div id="life-histogram" class="vis-container"></div>
         </section>
 
         <section class="vis-panel">
-            <h3>GDP vs Life Expectancy</h3>
+            <h3>Correlation Analysis</h3>
+            <div class="scatterplot-selection">
+                <div class="select-group">
+                    <label for="x-axis-select">X-Axis</label>
+                    <select id="x-axis-select">
+                        <option value="gdpPerCapita" selected>GDP Per Capita</option>
+                        <option value="lifeExpectancy">Life Expectancy</option>
+                        <option value="humanDevelopmentIndex">HDI</option>
+                        <option value="infantMortalityRate">Infant Mortality</option>
+                    </select>
+                </div>
+                <div class="select-group">
+                    <label for="y-axis-select">Y-Axis</label>
+                    <select id="y-axis-select">
+                        <option value="lifeExpectancy" selected>Life Expectancy</option>
+                        <option value="gdpPerCapita">GDP Per Capita</option>
+                        <option value="humanDevelopmentIndex">HDI</option>
+                        <option value="infantMortalityRate">Infant Mortality</option>
+                    </select>
+                </div>
+            </div>
             <div id="scatterplot" class="vis-container"></div>
         </section>
-
     </div>
 
     <script src="./js/choroplethMap.js"></script>

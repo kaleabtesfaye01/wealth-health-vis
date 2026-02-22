@@ -2,6 +2,7 @@ class ChoroplethMap {
   constructor(config) {
     this.config = config;
     this.gradientId = `${this.config.parentElement}-legend-gradient`;
+    this.legendTitle = config.legendTitle || "";
     this.initVis();
     window.addEventListener("resize", () => this.resize());
   }
@@ -46,7 +47,7 @@ class ChoroplethMap {
     this.colorScale =
       this.scaleType === "log"
         ? d3.scaleSequentialLog(d3.interpolateBlues).domain([min, max])
-        : d3.scaleSequential(d3.interpolateYlOrRd).domain([min, max]);
+        : d3.scaleSequential(d3.interpolateViridis).domain([min, max]);
 
     this.renderVis([min, max]);
   }
@@ -66,7 +67,7 @@ class ChoroplethMap {
       .attr("d", this.path)
       .attr("fill", (d) => {
         const v = d.properties[this.config.field];
-        return Number.isFinite(v) ? this.colorScale(v) : "#e5e7eb";
+        return Number.isFinite(v) ? this.colorScale(v) : "url(#lightstripe)";
       })
       .attr("stroke", "#ffffff")
       .attr("stroke-width", 0.8);

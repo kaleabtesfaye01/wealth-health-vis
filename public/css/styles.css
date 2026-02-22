@@ -1,70 +1,125 @@
-html, body {
+:root {
+  --bg-main: #f8fafc;
+  --bg-panel: #ffffff;
+  --accent: #3b82f6;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: rgba(15, 23, 42, 0.08);
+  --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05);
+  --radius: 16px;
+  --gap: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
   margin: 0;
-  height: 100%;
+  height: 100dvh;
+  width: 100vw;
   overflow: hidden;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f6f8fb;
-  color: #0f172a;
+  font-family: "Inter", system-ui, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
 }
 
 #dashboard-grid {
-  height: 100%;
   display: grid;
-  grid-template-columns: 0.85fr 2.15fr;
+  height: 100%;
+  padding: var(--gap);
+  gap: var(--gap);
+  grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  gap: 16px;
-  padding: 16px;
-  box-sizing: border-box;
 }
 
 .vis-panel {
-  position: relative;
-  background: white;
-  border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  background: var(--bg-panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  min-height: 0;
 }
 
 .vis-panel h3 {
-  font-size: 13px;
-  font-weight: 600;
-  margin: 14px 16px 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  margin: 1.25rem 1.25rem 0.5rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .vis-container {
   flex: 1;
   min-height: 0;
+  position: relative;
 }
 
-.map-buttons {
-  position: absolute;
-  top: 14px;
-  left: 14px;
+/* Control Row Styling */
+.map-buttons, .histogram-controls {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  margin: 0 1.25rem 0.5rem;
   padding: 4px;
-  background: white;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
-  z-index: 10;
+  background: #f1f5f9;
+  border-radius: 8px;
+  width: fit-content;
 }
 
-.map-buttons button {
+.map-buttons button, .histogram-controls button {
   border: none;
-  border-radius: 999px;
   background: transparent;
   padding: 6px 12px;
-  font-size: 11px;
+  font-size: 0.7rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.map-buttons button.active, .histogram-controls button.active {
+  background: white;
+  color: var(--accent);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Scatterplot Selectors */
+.scatterplot-selection {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0 1.25rem 1rem;
+}
+
+.select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scatterplot-selection label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.scatterplot-selection select {
+  padding: 6px 30px 6px 10px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") no-repeat right 8px center / 12px;
+  appearance: none;
   cursor: pointer;
 }
 
-.map-buttons button.active {
-  background: #e2e8f0;
-  color: #0f172a;
+/* Responsive Grid */
+@media (max-width: 900px) {
+  #dashboard-grid {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .vis-panel { min-height: 400px; }
 }
