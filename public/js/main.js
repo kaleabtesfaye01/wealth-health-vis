@@ -8,6 +8,7 @@ Promise.all([
       d.lifeExpectancy = +d["Life expectancy"] || 0;
       d.infantMortalityRate = +d["Under-five mortality rate (selected)"] || 0;
       d.humanDevelopmentIndex = +d["Human Development Index"] || 0;
+      d.country = d.Entity;
     });
 
     const dataMap = new Map(countryData.map((d) => [d.Code, d]));
@@ -20,7 +21,7 @@ Promise.all([
       parentElement: "gdp-histogram",
       data: countryData,
       field: "gdpPerCapita",
-      xLabel: "GDP per Capita (USD) →",
+      xLabel: "GDP per Capita (USD)",
       barColor: "#0a84ff",
     });
 
@@ -28,7 +29,7 @@ Promise.all([
       parentElement: "life-histogram",
       data: countryData,
       field: "lifeExpectancy",
-      xLabel: "Life Expectancy (Years) →",
+      xLabel: "Life Expectancy (Years)",
       barColor: "#ff375f",
     });
 
@@ -37,7 +38,7 @@ Promise.all([
       data: countryData,
       xField: "gdpPerCapita",
       yField: "lifeExpectancy",
-      xLabel: "GDP per Capita (USD) →",
+      xLabel: "GDP per Capita (USD)",
       yLabel: "Life Expectancy (Years)",
       pointColor: "#30d158",
     });
@@ -82,13 +83,13 @@ Promise.all([
       scatterplot.config.xField = x.property("value");
       scatterplot.config.yField = y.property("value");
       if (scatterplot.config.xField === "gdpPerCapita") {
-        scatterplot.config.xLabel = "GDP per Capita (USD) →";
+        scatterplot.config.xLabel = "GDP per Capita (USD)";
       } else if (scatterplot.config.xField === "lifeExpectancy") {
-        scatterplot.config.xLabel = "Life Expectancy (Years) →";
+        scatterplot.config.xLabel = "Life Expectancy (Years)";
       } else if (scatterplot.config.xField === "infantMortalityRate") {
-        scatterplot.config.xLabel = "Under-five Mortality Rate →";
+        scatterplot.config.xLabel = "Under-five Mortality Rate";
       } else if (scatterplot.config.xField === "humanDevelopmentIndex") {
-        scatterplot.config.xLabel = "Human Development Index →";
+        scatterplot.config.xLabel = "Human Development Index";
       }
 
       if (scatterplot.config.yField === "gdpPerCapita") {

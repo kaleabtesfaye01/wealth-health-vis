@@ -38,8 +38,10 @@ Colors used and why?
 - #ff375f: for Histogram 2 (Life expectancy)
 - #0a84ff: for Histogram 1 (GDP per capita)
 - #30d158: for Scatterplot
-- InterpolatedBlues for logarithmic scales like GDP per Capita
-- interpolateYlOrRd for linear scales like Life Expectancy
+- interpolatedBlues for logarithmic scales like GDP per Capita
+- interpolateYlGnBu for linear scales like Life Expectancy
+
+---
 
 ## Level 3
 
@@ -56,3 +58,11 @@ Same colors used as level 2.
 
 - Display 1 choropleth map with buttons to toggle between all 4 attributes
 - Display 1 scatterplot where users can select x-axis and y-axis columns to see any correlation between any two attributes.
+
+---
+
+## Level 4
+
+Choropleth Map: On Hover display country name and attribute value
+Histograms: On Hover display bar range and count
+Scatterplot: On Hover display country name and both attribute values

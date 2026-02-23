@@ -35,6 +35,21 @@ class Histogram {
       .attr("font-size", "10px")
       .attr("font-weight", "600");
 
+    vis.tooltip = d3
+      .select("body")
+      .append("div")
+      .attr("class", "hist-tooltip")
+      .style("opacity", 0)
+      .style("position", "absolute")
+      .style("pointer-events", "none")
+      .style("background", "rgba(255, 255, 255, 0.95)")
+      .style("padding", "8px")
+      .style("border", "1px solid #cbd5e1")
+      .style("border-radius", "4px")
+      .style("font-size", "12px")
+      .style("color", "#1e293b")
+      .style("box-shadow", "0 4px 6px -1px rgb(0 0 0 / 0.1)");
+
     vis.updateVis();
   }
 
@@ -84,6 +99,36 @@ class Histogram {
     bars
       .join("rect")
       .attr("class", "bar")
+      .style("cursor", "pointer")
+      .on("mouseover", function (event, d) {
+        d3.select(this)
+          .transition()
+          .duration(100)
+          .attr("fill-opacity", 1)
+          .attr("stroke", "#1e293b")
+          .attr("stroke-width", 1);
+        vis.tooltip.style("opacity", 1).html(`
+        <strong>Range: ${d3.format(".2s")(d.x0)} - ${d3.format(".2s")(d.x1)}</strong><br/>
+        Count: ${d.length}
+      `);
+      })
+      .on("mousemove", (event) => {
+        const tooltipWidth = 160;
+        let xPos = event.pageX + 15;
+        if (xPos + tooltipWidth > window.innerWidth)
+          xPos = event.pageX - tooltipWidth - 15;
+        vis.tooltip
+          .style("left", xPos + "px")
+          .style("top", event.pageY - 25 + "px");
+      })
+      .on("mouseleave", function () {
+        d3.select(this)
+          .transition()
+          .duration(100)
+          .attr("fill-opacity", 0.8)
+          .attr("stroke", "none");
+        vis.tooltip.style("opacity", 0);
+      })
       .transition()
       .duration(600)
       .attr("x", (d) => vis.xScale(d.x0) + 1)
@@ -95,7 +140,6 @@ class Histogram {
       .attr("fill", barColor)
       .attr("fill-opacity", 0.8);
 
-    // Update Axes
     vis.xAxisG
       .attr("transform", `translate(0,${vis.height})`)
       .transition()
@@ -107,7 +151,6 @@ class Histogram {
       .duration(600)
       .call(d3.axisLeft(vis.yScale).ticks(5));
 
-    // Update Label
     vis.xLabelText
       .attr("x", vis.width)
       .attr("y", vis.height + 35)

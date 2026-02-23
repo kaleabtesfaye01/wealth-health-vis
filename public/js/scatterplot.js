@@ -46,6 +46,22 @@ class Scatterplot {
       .attr("transform", "rotate(-90)")
       .attr("y", -35);
 
+    vis.tooltip = d3
+      .select("body")
+      .selectAll(".chart-tooltip")
+      .data([null])
+      .join("div")
+      .attr("class", "chart-tooltip")
+      .style("opacity", 0)
+      .style("position", "absolute")
+      .style("pointer-events", "none")
+      .style("background", "white")
+      .style("padding", "8px")
+      .style("border", "1px solid #cbd5e1")
+      .style("border-radius", "4px")
+      .style("font-size", "12px")
+      .style("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
+
     vis.updateVis();
   }
 
@@ -81,6 +97,38 @@ class Scatterplot {
 
     circles
       .join("circle")
+      .style("cursor", "pointer")
+      .on("mouseover", function (event, d) {
+        d3.select(this)
+          .transition()
+          .duration(100)
+          .attr("r", 7)
+          .attr("fill-opacity", 1)
+          .attr("stroke", "#000");
+        vis.tooltip.style("opacity", 1).html(`
+        <strong>${d.country || d.name || "Details"}</strong><br/>
+        ${vis.config.xLabel}: ${d3.format(",.2f")(d[vis.config.xField])}<br/>
+        ${vis.config.yLabel}: ${d3.format(",.2f")(d[vis.config.yField])}
+      `);
+      })
+      .on("mousemove", (event) => {
+        const tooltipWidth = 160;
+        let xPos = event.pageX + 15;
+        if (xPos + tooltipWidth > window.innerWidth)
+          xPos = event.pageX - tooltipWidth - 15;
+        vis.tooltip
+          .style("left", xPos + "px")
+          .style("top", event.pageY - 25 + "px");
+      })
+      .on("mouseleave", function () {
+        d3.select(this)
+          .transition()
+          .duration(100)
+          .attr("r", 4)
+          .attr("fill-opacity", 0.6)
+          .attr("stroke", vis.config.pointColor || "#30d158");
+        vis.tooltip.style("opacity", 0);
+      })
       .transition()
       .duration(800)
       .ease(d3.easeCubicOut)

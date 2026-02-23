@@ -8,71 +8,106 @@ class ChoroplethMap {
   }
 
   initVis() {
-    const container = d3.select(`#${this.config.parentElement}`);
+    const vis = this;
+    const container = d3.select(`#${vis.config.parentElement}`);
     const bounds = container.node().getBoundingClientRect();
-    this.width = bounds.width;
-    this.height = bounds.height;
+    vis.width = bounds.width;
+    vis.height = bounds.height;
 
-    this.svg = container
+    vis.svg = container
       .append("svg")
       .attr("width", "100%")
       .attr("height", "100%")
-      .attr("viewBox", `0 0 ${this.width} ${this.height}`);
+      .attr("viewBox", `0 0 ${vis.width} ${vis.height}`);
 
-    this.mapGroup = this.svg.append("g");
-    this.legendGroup = this.svg.append("g");
+    vis.mapGroup = vis.svg.append("g");
+    vis.legendGroup = vis.svg.append("g");
 
-    this.projection = d3.geoNaturalEarth1();
-    this.path = d3.geoPath().projection(this.projection);
+    vis.projection = d3.geoNaturalEarth1();
+    vis.path = d3.geoPath().projection(vis.projection);
 
-    this.updateVis();
+    vis.tooltip = d3
+      .select("body")
+      .selectAll(".chart-tooltip")
+      .data([null])
+      .join("div")
+      .attr("class", "chart-tooltip")
+      .style("opacity", 0);
+
+    vis.updateVis();
   }
 
   updateVis() {
-    const values = this.config.geoData.features.map(
-      (d) => d.properties[this.config.field],
+    const vis = this;
+    const values = vis.config.geoData.features.map(
+      (d) => d.properties[vis.config.field],
     );
-
     if (values.length === 0) return;
 
-    const [rawMin, rawMax] = d3.extent(values);
-    const min = rawMin;
-    const max = rawMax === rawMin ? rawMax + 1 : rawMax;
+    const [min, max] = d3.extent(values);
     const median = d3.median(values);
     const canUseLog = min > 0 && Number.isFinite(median) && median > 0;
-    const skewRatio = canUseLog ? max / median : 0;
 
-    this.scaleType = canUseLog && skewRatio > 4 ? "log" : "linear";
-
-    this.colorScale =
-      this.scaleType === "log"
+    vis.scaleType = canUseLog && max / median > 4 ? "log" : "linear";
+    vis.colorScale =
+      vis.scaleType === "log"
         ? d3.scaleSequentialLog(d3.interpolateBlues).domain([min, max])
-        : d3.scaleSequential(d3.interpolateViridis).domain([min, max]);
+        : d3.scaleSequential(d3.interpolateYlGnBu).domain([min, max]);
 
-    this.renderVis([min, max]);
+    vis.renderVis([min, max]);
   }
 
   renderVis(extent) {
+    const vis = this;
     const padding = 20;
-    const mapWidth = Math.max(10, this.width - padding);
-    const mapHeight = Math.max(10, this.height - 60);
+    vis.projection.fitSize(
+      [vis.width - padding, vis.height - 60],
+      vis.config.geoData,
+    );
 
-    this.projection.fitSize([mapWidth, mapHeight], this.config.geoData);
-
-    this.mapGroup
-      .attr("transform", `translate(${padding},${padding})`)
+    vis.mapGroup
+      .attr("transform", `translate(${padding / 2},${padding})`)
       .selectAll("path")
-      .data(this.config.geoData.features)
+      .data(vis.config.geoData.features)
       .join("path")
-      .attr("d", this.path)
+      .attr("d", vis.path)
+      .style("cursor", (d) => {
+        const v = d.properties[vis.config.field];
+        return Number.isFinite(v) ? "pointer" : "default";
+      })
       .attr("fill", (d) => {
-        const v = d.properties[this.config.field];
-        return Number.isFinite(v) ? this.colorScale(v) : "url(#lightstripe)";
+        const v = d.properties[vis.config.field];
+        return Number.isFinite(v) ? vis.colorScale(v) : "url(#lightstripe)";
       })
       .attr("stroke", "#ffffff")
-      .attr("stroke-width", 0.8);
+      .attr("stroke-width", 0.8)
+      .on("mouseover", function (event, d) {
+        const value = d.properties[vis.config.field];
+        d3.select(this)
+          .attr("stroke", "#334155")
+          .attr("stroke-width", 2)
+          .raise();
 
-    this.renderLegend(extent);
+        vis.tooltip.style("opacity", 1).html(`
+          <strong>${d.properties.name || "Unknown"}</strong><br/>
+          ${vis.config.legendTitle}: ${Number.isFinite(value) ? d3.format(",.2s")(value) : "No Data"}
+        `);
+      })
+      .on("mousemove", (event) => {
+        const tooltipWidth = 160;
+        let xPos = event.pageX + 15;
+        if (xPos + tooltipWidth > window.innerWidth)
+          xPos = event.pageX - tooltipWidth - 15;
+        vis.tooltip
+          .style("left", xPos + "px")
+          .style("top", event.pageY - 25 + "px");
+      })
+      .on("mouseleave", function () {
+        d3.select(this).attr("stroke", "#ffffff").attr("stroke-width", 0.8);
+        vis.tooltip.style("opacity", 0);
+      });
+
+    vis.renderLegend(extent);
   }
 
   renderLegend(extent) {
