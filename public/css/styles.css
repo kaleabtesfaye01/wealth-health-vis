@@ -10,7 +10,9 @@
   --gap: 16px;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
@@ -54,9 +56,9 @@ body {
   flex: 1;
   min-height: 0;
   position: relative;
+  overflow: hidden;
 }
 
-/* Control Row Styling */
 .map-buttons, .histogram-controls {
   display: flex;
   gap: 4px;
@@ -85,7 +87,6 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* Scatterplot Selectors */
 .scatterplot-selection {
   display: flex;
   gap: 1.5rem;
@@ -115,11 +116,55 @@ body {
   cursor: pointer;
 }
 
-/* Responsive Grid */
+.chart-tooltip, .map-tooltip, .hist-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.98);
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  color: var(--text-main);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+.chart-tooltip strong {
+  display: block;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.bar, .country-path, circle {
+  transition: fill-opacity 0.2s ease, stroke 0.2s ease, r 0.2s ease;
+}
+
+.brush .selection {
+  fill: var(--accent);
+  fill-opacity: 0.15;
+  stroke: var(--accent);
+  stroke-width: 1px;
+}
+
+.brush .handle {
+  fill: #fff;
+  stroke: var(--text-muted);
+  rx: 2px;
+}
+
+svg {
+  overflow: visible;
+}
+
 @media (max-width: 900px) {
   #dashboard-grid {
     grid-template-columns: 1fr;
     overflow-y: auto;
   }
-  .vis-panel { min-height: 400px; }
+  .vis-panel {
+    min-height: 400px;
+  }
 }

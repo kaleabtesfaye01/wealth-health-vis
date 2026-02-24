@@ -66,3 +66,11 @@ Same colors used as level 2.
 Choropleth Map: On Hover display country name and attribute value
 Histograms: On Hover display bar range and count
 Scatterplot: On Hover display country name and both attribute values
+
+## Level 5
+
+- Filtered highlighting approach
+  - highlighting method over a filtering method. Visually filtered unselected data using a light-stripe pattern and reduced opacity. It remains in the background to preserve geographic context.
+
+- Static scales
+  - scales static because if the scales move, the dots will "jump" under the cursor, making it impossible to refine a selection.

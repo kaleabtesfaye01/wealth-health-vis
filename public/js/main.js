@@ -3,6 +3,7 @@ Promise.all([
   d3.csv("../../data/processed/level1_data.csv"),
 ])
   .then(([geoData, countryData]) => {
+    // Data Preprocessing
     countryData.forEach((d) => {
       d.gdpPerCapita = +d["GDP per capita"] || 0;
       d.lifeExpectancy = +d["Life expectancy"] || 0;
@@ -17,12 +18,17 @@ Promise.all([
       if (match) Object.assign(feature.properties, match);
     });
 
+    const handleSelection = (selectedEntities) => {
+      instances.forEach((ins) => ins.updateSelection(selectedEntities));
+    };
+
     const gdpHist = new Histogram({
       parentElement: "gdp-histogram",
       data: countryData,
       field: "gdpPerCapita",
       xLabel: "GDP per Capita (USD)",
       barColor: "#0a84ff",
+      onBrush: handleSelection,
     });
 
     const lifeHist = new Histogram({
@@ -31,6 +37,7 @@ Promise.all([
       field: "lifeExpectancy",
       xLabel: "Life Expectancy (Years)",
       barColor: "#ff375f",
+      onBrush: handleSelection,
     });
 
     const scatterplot = new Scatterplot({
@@ -41,6 +48,7 @@ Promise.all([
       xLabel: "GDP per Capita (USD)",
       yLabel: "Life Expectancy (Years)",
       pointColor: "#30d158",
+      onBrush: handleSelection,
     });
 
     const choropleth = new ChoroplethMap({
@@ -52,79 +60,51 @@ Promise.all([
 
     const instances = [gdpHist, lifeHist, scatterplot, choropleth];
 
+    // UI Event Handlers
+    const labels = {
+      gdpPerCapita: "GDP per Capita (USD)",
+      lifeExpectancy: "Life Expectancy (Years)",
+      infantMortalityRate: "Under-five Mortality Rate",
+      humanDevelopmentIndex: "Human Development Index",
+    };
+
     d3.selectAll(".histogram-controls button").on("click", function () {
       const btn = d3.select(this);
-      const container = d3.select(this.parentNode);
       const field = btn.attr("data-field");
-      const targetId = container.attr("data-target");
-
-      const targetVis = targetId === "gdp-histogram" ? gdpHist : lifeHist;
+      const targetVis =
+        d3.select(this.parentNode).attr("data-target") === "gdp-histogram"
+          ? gdpHist
+          : lifeHist;
 
       targetVis.config.field = field;
-      if (field === "gdpPerCapita") {
-        targetVis.config.xLabel = "GDP per Capita (USD) →";
-      } else if (field === "lifeExpectancy") {
-        targetVis.config.xLabel = "Life Expectancy (Years) →";
-      } else if (field === "infantMortalityRate") {
-        targetVis.config.xLabel = "Under-five Mortality Rate →";
-      } else if (field === "humanDevelopmentIndex") {
-        targetVis.config.xLabel = "Human Development Index →";
-      }
+      targetVis.config.xLabel =
+        labels[field] + (targetVis instanceof Histogram ? " →" : "");
       targetVis.updateVis();
 
-      container.selectAll("button").classed("active", false);
+      d3.select(this.parentNode).selectAll("button").classed("active", false);
       btn.classed("active", true);
     });
 
-    const updateScatter = () => {
-      const x = d3.select("#x-axis-select");
-      const y = d3.select("#y-axis-select");
-
-      scatterplot.config.xField = x.property("value");
-      scatterplot.config.yField = y.property("value");
-      if (scatterplot.config.xField === "gdpPerCapita") {
-        scatterplot.config.xLabel = "GDP per Capita (USD)";
-      } else if (scatterplot.config.xField === "lifeExpectancy") {
-        scatterplot.config.xLabel = "Life Expectancy (Years)";
-      } else if (scatterplot.config.xField === "infantMortalityRate") {
-        scatterplot.config.xLabel = "Under-five Mortality Rate";
-      } else if (scatterplot.config.xField === "humanDevelopmentIndex") {
-        scatterplot.config.xLabel = "Human Development Index";
-      }
-
-      if (scatterplot.config.yField === "gdpPerCapita") {
-        scatterplot.config.yLabel = "GDP per Capita (USD)";
-      } else if (scatterplot.config.yField === "lifeExpectancy") {
-        scatterplot.config.yLabel = "Life Expectancy (Years)";
-      } else if (scatterplot.config.yField === "infantMortalityRate") {
-        scatterplot.config.yLabel = "Under-five Mortality Rate";
-      } else if (scatterplot.config.yField === "humanDevelopmentIndex") {
-        scatterplot.config.yLabel = "Human Development Index";
-      }
-
+    d3.selectAll("#x-axis-select, #y-axis-select").on("change", () => {
+      const x = d3.select("#x-axis-select").property("value");
+      const y = d3.select("#y-axis-select").property("value");
+      scatterplot.config.xField = x;
+      scatterplot.config.yField = y;
+      scatterplot.config.xLabel = labels[x];
+      scatterplot.config.yLabel = labels[y];
       scatterplot.updateVis();
-    };
-    d3.selectAll("#x-axis-select, #y-axis-select").on("change", updateScatter);
+    });
 
     d3.selectAll(".map-buttons button").on("click", function () {
       const btn = d3.select(this);
-      let legendTitle = "";
-      if (btn.attr("data-field") === "gdpPerCapita") {
-        legendTitle = "GDP per Capita (USD)";
-      } else if (btn.attr("data-field") === "lifeExpectancy") {
-        legendTitle = "Life Expectancy (Years)";
-      } else if (btn.attr("data-field") === "infantMortalityRate") {
-        legendTitle = "Under-five Mortality Rate";
-      } else if (btn.attr("data-field") === "humanDevelopmentIndex") {
-        legendTitle = "Human Development Index";
-      }
-      choropleth.setField(btn.attr("data-field"), legendTitle);
+      const field = btn.attr("data-field");
+      choropleth.setField(field, labels[field]);
       d3.selectAll(".map-buttons button").classed("active", false);
       btn.classed("active", true);
     });
 
-    window.addEventListener("resize", () => {
-      instances.forEach((ins) => ins.updateVis());
-    });
+    window.addEventListener("resize", () =>
+      instances.forEach((ins) => (ins.resize ? ins.resize() : ins.updateVis())),
+    );
   })
-  .catch((err) => console.error("Data Load Error:", err));
+  .catch((err) => console.error("Dashboard Load Error:", err));

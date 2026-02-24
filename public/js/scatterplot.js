@@ -62,6 +62,9 @@ class Scatterplot {
       .style("font-size", "12px")
       .style("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
 
+    vis.brushG = vis.chart.append("g").attr("class", "brush");
+    vis.brush = d3.brush().on("brush end", (event) => vis.brushed(event));
+
     vis.updateVis();
   }
 
@@ -86,6 +89,12 @@ class Scatterplot {
       .domain(d3.extent(vis.displayData, (d) => d[vis.config.yField]))
       .range([vis.height, 0])
       .nice();
+
+    vis.brush.extent([
+      [0, 0],
+      [vis.width, vis.height],
+    ]);
+    vis.brushG.call(vis.brush);
 
     vis.renderVis();
   }
@@ -159,5 +168,40 @@ class Scatterplot {
       .text(vis.config.xLabel);
 
     vis.yLabel.attr("x", -vis.height / 2).text(vis.config.yLabel);
+  }
+
+  updateSelection(selectedIDs) {
+    const vis = this;
+    vis.chart
+      .selectAll("circle")
+      .transition()
+      .duration(300)
+      .attr("fill-opacity", (d) =>
+        !selectedIDs || selectedIDs.includes(d.country) ? 0.8 : 0.1,
+      )
+      .attr("r", (d) =>
+        !selectedIDs || selectedIDs.includes(d.country) ? 5 : 2.5,
+      );
+  }
+
+  brushed(event) {
+    const vis = this;
+    if (!event.sourceEvent) return;
+
+    if (!event.selection) {
+      vis.config.onBrush(null);
+      return;
+    }
+    const [[x0, y0], [x1, y1]] = event.selection;
+
+    const selectedIDs = vis.displayData
+      .filter((d) => {
+        const px = vis.xScale(d[vis.config.xField]);
+        const py = vis.yScale(d[vis.config.yField]);
+        return px >= x0 && px <= x1 && py >= y0 && py <= y1;
+      })
+      .map((d) => d.country);
+
+    vis.config.onBrush(selectedIDs);
   }
 }
