@@ -93,8 +93,7 @@ Promise.all([
           : lifeHist;
 
       targetVis.config.field = field;
-      targetVis.config.xLabel =
-        labels[field] + (targetVis instanceof Histogram ? " →" : "");
+      targetVis.config.xLabel = labels[field];
       targetVis.updateVis();
 
       d3.select(this.parentNode).selectAll("button").classed("active", false);
