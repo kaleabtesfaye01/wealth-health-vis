@@ -1,3 +1,9 @@
+document.getElementById("enter-dashboard").addEventListener("click", () => {
+  document.getElementById("landing-page").style.display = "none";
+
+  document.getElementById("dashboard-page").classList.remove("hidden");
+});
+
 Promise.all([
   d3.json("../../data/world.geojson"),
   d3.csv("../../data/processed/level1_data.csv"),
@@ -56,9 +62,19 @@ Promise.all([
       geoData: geoData,
       field: "gdpPerCapita",
       legendTitle: "GDP per Capita (USD)",
+      onBrush: handleSelection,
     });
 
     const instances = [gdpHist, lifeHist, scatterplot, choropleth];
+
+    d3.select("#reset-all-filters").on("click", () => {
+      instances.forEach((ins) => {
+        if (ins.brushG) {
+          ins.brushG.call(ins.brush.move, null);
+        }
+        handleSelection(null);
+      });
+    });
 
     // UI Event Handlers
     const labels = {

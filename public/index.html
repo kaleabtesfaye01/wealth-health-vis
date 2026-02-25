@@ -1,80 +1,116 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Global Development Dashboard</title>
+
+    <title>Health vs Wealth Dashboard</title>
+
     <link rel="stylesheet" href="./css/styles.css" />
     <script src="./js/d3.v7.min.js"></script>
 </head>
 
 <body>
-    <div id="dashboard-grid">
-        <section class="vis-panel">
-            <h3>Wealth & Development</h3>
-            <div class="histogram-controls" data-target="gdp-histogram">
-                <button data-field="gdpPerCapita" class="active">GDP</button>
-                <button data-field="humanDevelopmentIndex">HDI</button>
+    <!-- LANDING PAGE -->
+
+    <section id="landing-page">
+        <div class="landing-content">
+            <h1>Global <span>Health vs Wealth</span></h1>
+
+            <p class="description">
+                How does economic prosperity influence the physical well-being of a nation?
+                This dashboard provides a multi-dimensional analysis of global progress,
+                mapping the correlation between wealth metrics like GDP and critical
+                health outcomes.
+            </p>
+
+            <div class="interaction-guide">
+                <h3>How to Explore:</h3>
+                <ul>
+                    <li><strong>Interactive Brushing:</strong> Draw a selection on the map or any chart to highlight
+                        specific countries. If any part of a country falls within your selection, it will be included.
+                    </li>
+                    <li><strong>Linked Highlighting:</strong> Watch how your selection on one chart illuminates
+                        corresponding data points across all others.</li>
+                    <li><strong>Preserved Context:</strong> Unselected data remains visible as a "ghost" background,
+                        allowing you to compare your subset against the global whole.</li>
+                </ul>
             </div>
-            <div id="gdp-histogram" class="vis-container"></div>
-        </section>
 
-        <section class="vis-panel map-panel">
-            <h3>Global Distribution</h3>
-            <div class="map-buttons">
-                <button data-field="gdpPerCapita" class="active">GDP</button>
-                <button data-field="lifeExpectancy">Life Expectancy</button>
-                <button data-field="humanDevelopmentIndex">HDI</button>
-                <button data-field="infantMortalityRate">Infant Mortality</button>
-            </div>
-            <svg height="5" width="5" xmlns="http://www.w3.org/2000/svg" version="1.1">
-                <defs>
-                    <pattern id="lightstripe" patternUnits="userSpaceOnUse" width="5" height="5">
-                        <image
-                            xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc1JyBoZWlnaHQ9JzUnPgogIDxyZWN0IHdpZHRoPSc1JyBoZWlnaHQ9JzUnIGZpbGw9J3doaXRlJy8+CiAgPHBhdGggZD0nTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVonIHN0cm9rZT0nIzg4OCcgc3Ryb2tlLXdpZHRoPScxJy8+Cjwvc3ZnPg=="
-                            x="0" y="0" width="5" height="5"></image>
-                    </pattern>
-                </defs>
-            </svg>
+            <button id="enter-dashboard">Explore Dashboard →</button>
+        </div>
+    </section>
 
-            <div id="choropleth-map" class="vis-container"></div>
-        </section>
+    <!-- DASHBOARD PAGE -->
 
-        <section class="vis-panel">
-            <h3>Health Metrics</h3>
-            <div class="histogram-controls" data-target="life-histogram">
-                <button data-field="lifeExpectancy" class="active">Life Expectancy</button>
-                <button data-field="infantMortalityRate">Infant Mortality</button>
-            </div>
-            <div id="life-histogram" class="vis-container"></div>
-        </section>
+    <section id="dashboard-page" class="hidden">
+        <header class="dashboard-header">
+            <h2>Health vs Wealth Dashboard</h2>
 
-        <section class="vis-panel">
-            <h3>Correlation Analysis</h3>
-            <div class="scatterplot-selection">
-                <div class="select-group">
-                    <label for="x-axis-select">X-Axis</label>
+            <button id="reset-all-filters">Reset Filters</button>
+        </header>
+
+        <div id="dashboard-grid">
+            <section class="vis-panel">
+                <h3>Wealth Distribution</h3>
+
+                <div class="histogram-controls" data-target="gdp-histogram">
+                    <button data-field="gdpPerCapita" class="active">GDP</button>
+                    <button data-field="humanDevelopmentIndex">HDI</button>
+                </div>
+
+                <div id="gdp-histogram" class="vis-container"></div>
+            </section>
+
+            <section class="vis-panel">
+                <h3>Global Map</h3>
+
+                <div class="map-buttons">
+                    <button data-field="gdpPerCapita" class="active">GDP</button>
+                    <button data-field="lifeExpectancy">Life</button>
+                    <button data-field="humanDevelopmentIndex">HDI</button>
+                    <button data-field="infantMortalityRate">Mortality</button>
+                </div>
+
+                <div id="choropleth-map" class="vis-container"></div>
+            </section>
+
+            <section class="vis-panel">
+                <h3>Health Distribution</h3>
+
+                <div class="histogram-controls" data-target="life-histogram">
+                    <button data-field="lifeExpectancy" class="active">Life</button>
+
+                    <button data-field="infantMortalityRate">Mortality</button>
+                </div>
+
+                <div id="life-histogram" class="vis-container"></div>
+            </section>
+
+            <section class="vis-panel">
+                <h3>Correlation</h3>
+
+                <div class="scatterplot-selection">
                     <select id="x-axis-select">
-                        <option value="gdpPerCapita" selected>GDP Per Capita</option>
-                        <option value="lifeExpectancy">Life Expectancy</option>
+                        <option value="gdpPerCapita">GDP</option>
+                        <option value="lifeExpectancy">Life</option>
                         <option value="humanDevelopmentIndex">HDI</option>
-                        <option value="infantMortalityRate">Infant Mortality</option>
+                        <option value="infantMortalityRate">Mortality</option>
                     </select>
-                </div>
-                <div class="select-group">
-                    <label for="y-axis-select">Y-Axis</label>
+
                     <select id="y-axis-select">
-                        <option value="lifeExpectancy" selected>Life Expectancy</option>
-                        <option value="gdpPerCapita">GDP Per Capita</option>
+                        <option value="lifeExpectancy">Life</option>
+                        <option value="gdpPerCapita">GDP</option>
                         <option value="humanDevelopmentIndex">HDI</option>
-                        <option value="infantMortalityRate">Infant Mortality</option>
+                        <option value="infantMortalityRate">Mortality</option>
                     </select>
                 </div>
-            </div>
-            <div id="scatterplot" class="vis-container"></div>
-        </section>
-    </div>
+
+                <div id="scatterplot" class="vis-container"></div>
+            </section>
+        </div>
+    </section>
 
     <script src="./js/choroplethMap.js"></script>
     <script src="./js/histogram.js"></script>

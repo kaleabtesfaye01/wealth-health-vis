@@ -21,11 +21,15 @@ class ChoroplethMap {
       .attr("height", "100%")
       .attr("viewBox", `0 0 ${vis.width} ${vis.height}`);
 
+    vis.brushG = vis.svg.append("g").attr("class", "brush");
+
     vis.mapGroup = vis.svg.append("g");
     vis.legendGroup = vis.svg.append("g");
 
     vis.projection = d3.geoNaturalEarth1();
     vis.path = d3.geoPath().projection(vis.projection);
+
+    vis.brush = d3.brush().on("brush end", (event) => vis.brushed(event));
 
     vis.tooltip = d3
       .select("body")
@@ -34,6 +38,22 @@ class ChoroplethMap {
       .join("div")
       .attr("class", "chart-tooltip")
       .style("opacity", 0);
+
+    const defs = vis.svg.append("defs");
+
+    defs
+      .append("pattern")
+      .attr("id", "striped-pattern")
+      .attr("patternUnits", "userSpaceOnUse")
+      .attr("width", 5)
+      .attr("height", 5)
+      .append("image")
+      .attr(
+        "xlink:href",
+        "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc1JyBoZWlnaHQ9JzUnPgogIDxyZWN0IHdpZHRoPSc1JyBoZWlnaHQ9JzUnIGZpbGw9J3doaXRlJy8+CiAgPHBhdGggZD0nTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVonIHN0cm9rZT0nIzg4OCcgc3Ryb2tlLXdpZHRoPScxJy8+Cjwvc3ZnPg==",
+      )
+      .attr("width", 5)
+      .attr("height", 5);
 
     vis.updateVis();
   }
@@ -44,6 +64,12 @@ class ChoroplethMap {
       (d) => d.properties[vis.config.field],
     );
     if (values.length === 0) return;
+
+    vis.brush.extent([
+      [0, 0],
+      [vis.width, vis.height],
+    ]);
+    vis.brushG.call(vis.brush);
 
     const [min, max] = d3.extent(values);
     const median = d3.median(values);
@@ -72,49 +98,33 @@ class ChoroplethMap {
       .data(vis.config.geoData.features)
       .join("path")
       .attr("d", vis.path)
-      .style("cursor", (d) =>
-        Number.isFinite(d.properties[vis.config.field]) ? "pointer" : "default",
-      )
       .attr("fill", (d) => {
         const v = d.properties[vis.config.field];
-        return Number.isFinite(v) ? vis.colorScale(v) : "url(#lightstripe)";
+        return Number.isFinite(v) ? vis.colorScale(v) : "url(#striped-pattern)";
       })
       .attr("stroke", "#fff")
       .attr("stroke-width", 0.5)
-      .attr("paint-order", "stroke")
       .on("mouseover", function (event, d) {
         d3.select(this)
           .raise()
           .attr("stroke", "#0f172a")
           .attr("stroke-width", 1.5);
-
         vis.tooltip.style("opacity", 1).html(`
           <strong>${d.properties.name || "Unknown"}</strong><br/>
           ${vis.config.legendTitle}: ${Number.isFinite(d.properties[vis.config.field]) ? d3.format(",.2s")(d.properties[vis.config.field]) : "No Data"}
         `);
       })
       .on("mousemove", (event) => {
-        const tooltipWidth = 160;
-        let xPos = event.pageX + 15;
-        if (xPos + tooltipWidth > window.innerWidth)
-          xPos = event.pageX - tooltipWidth - 15;
         vis.tooltip
-          .style("left", xPos + "px")
+          .style("left", event.pageX + 15 + "px")
           .style("top", event.pageY - 25 + "px");
       })
       .on("mouseleave", function (event, d) {
         const isSelected =
           !vis.lastSelection || vis.lastSelection.includes(d.properties.name);
-        console.log(
-          "Is Selected:",
-          isSelected,
-          "Last Selection:",
-          vis.lastSelection,
-        );
         d3.select(this)
           .attr("stroke", isSelected ? "#fff" : "#e2e8f0")
-          .attr("stroke-width", isSelected ? 0.5 : 0.3);
-
+          .attr("stroke-width", 0.5);
         vis.tooltip.style("opacity", 0);
       });
 
@@ -204,57 +214,59 @@ class ChoroplethMap {
   updateSelection(selectedIDs) {
     const vis = this;
     vis.lastSelection = selectedIDs;
-    const paths = vis.mapGroup.selectAll("path");
-
-    // 1. Handle Semantic Zooming
-    if (selectedIDs && selectedIDs.length > 0) {
-      const selectedFeatures = vis.config.geoData.features.filter((d) =>
-        selectedIDs.includes(d.properties.name),
-      );
-      if (selectedFeatures.length > 0) {
-        vis.projection.fitSize([vis.width - 40, vis.height - 80], {
-          type: "FeatureCollection",
-          features: selectedFeatures,
-        });
-      }
-    } else {
-      vis.projection.fitSize(
-        [vis.width - 40, vis.height - 80],
-        vis.config.geoData,
-      );
-    }
-
-    vis.path.projection(vis.projection);
-
-    // 2. Handle Filtered Styling and Interactivity
-    paths
+    vis.mapGroup
+      .selectAll("path")
       .transition()
-      .duration(750)
-      .attr("d", vis.path)
-      .attr("fill", (d) => {
-        const isSelected =
-          !selectedIDs || selectedIDs.includes(d.properties.name);
-        if (isSelected) {
-          const v = d.properties[vis.config.field];
-          return Number.isFinite(v) ? vis.colorScale(v) : "url(#lightstripe)";
-        }
-        return "url(#lightstripe)"; // Filtered out
-      })
+      .duration(400)
       .attr("fill-opacity", (d) =>
         !selectedIDs || selectedIDs.includes(d.properties.name) ? 1 : 0.2,
       )
-      .attr("stroke", (d) =>
-        !selectedIDs || selectedIDs.includes(d.properties.name)
-          ? "#fff"
-          : "#e2e8f0",
-      )
-      .attr("stroke-width", (d) =>
-        !selectedIDs || selectedIDs.includes(d.properties.name) ? 0.5 : 0.2,
-      )
+      .attr("fill", (d) => {
+        const v = d.properties[vis.config.field];
+        if (!Number.isFinite(v)) {
+          return "url(#striped-pattern)";
+        }
+        return vis.colorScale(v);
+      })
       .style("pointer-events", (d) =>
         !selectedIDs || selectedIDs.includes(d.properties.name)
           ? "all"
           : "none",
       );
+  }
+
+  brushed(event) {
+    const vis = this;
+    if (!event.sourceEvent) return;
+    if (!event.selection) {
+      vis.config.onBrush(null);
+      return;
+    }
+
+    // Define padding used in renderVis
+    const paddingX = 20 / 2;
+    const paddingY = 20;
+
+    const [[x0, y0], [x1, y1]] = event.selection;
+
+    const selectedIDs = vis.config.geoData.features
+      .filter((d) => {
+        const bounds = vis.path.bounds(d);
+        // Adjust bounds based on mapGroup translation
+        const countryLeft = bounds[0][0] + paddingX;
+        const countryTop = bounds[0][1] + paddingY;
+        const countryRight = bounds[1][0] + paddingX;
+        const countryBottom = bounds[1][1] + paddingY;
+
+        return !(
+          countryRight < x0 ||
+          countryLeft > x1 ||
+          countryBottom < y0 ||
+          countryTop > y1
+        );
+      })
+      .map((d) => d.properties.name);
+
+    vis.config.onBrush(selectedIDs);
   }
 }

@@ -181,6 +181,9 @@ class Scatterplot {
       )
       .attr("r", (d) =>
         !selectedIDs || selectedIDs.includes(d.country) ? 5 : 2.5,
+      )
+      .attr("pointer-events", (d) =>
+        !selectedIDs || selectedIDs.includes(d.country) ? "auto" : "none",
       );
   }
 

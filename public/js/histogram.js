@@ -17,10 +17,6 @@ class Histogram {
       .attr("transform", `translate(${vis.margin.left},${vis.margin.top})`);
 
     vis.brushG = vis.chart.append("g").attr("class", "brush");
-    vis.brush = d3
-      .brushX()
-      .handleSize(8)
-      .on("brush end", (event) => vis.brushed(event));
 
     vis.xScale = d3.scaleLinear();
     vis.yScale = d3.scaleLinear();
@@ -32,6 +28,11 @@ class Histogram {
       .attr("text-anchor", "end")
       .attr("fill", "#64748b")
       .attr("font-size", "10px");
+
+    vis.brush = d3
+      .brushX()
+      .handleSize(8)
+      .on("brush end", (event) => vis.brushed(event));
 
     vis.tooltip = d3
       .select("body")
@@ -60,22 +61,22 @@ class Histogram {
     ]);
     vis.brushG.call(vis.brush);
 
-    const bins = d3
+    vis.bins = d3
       .bin()
       .domain(vis.xScale.domain())
       .thresholds(vis.xScale.ticks(20))(values);
     vis.yScale
-      .domain([0, d3.max(bins, (d) => d.length)])
+      .domain([0, d3.max(vis.bins, (d) => d.length)])
       .nice()
       .range([vis.height, 0]);
-    vis.renderVis(bins);
+    vis.renderVis();
   }
 
-  renderVis(bins) {
+  renderVis() {
     const vis = this;
     vis.chart
       .selectAll(".bar")
-      .data(bins)
+      .data(vis.bins)
       .join("rect")
       .attr("class", "bar")
       .attr("fill", vis.config.barColor)
@@ -125,7 +126,7 @@ class Histogram {
           .filter((d) => {
             const val = d[this.config.field];
             const [x0, x1] = event.selection.map(this.xScale.invert);
-            return val >= x0 && val <= x1;
+            return val >= x0 && val < x1;
           })
           .map((d) => d.country);
     this.config.onBrush(selectedIDs);
@@ -145,6 +146,14 @@ class Histogram {
         );
         return binContainsSelected ? 1 : 0.1;
       })
-      .style("pointer-events", selectedIDs ? "none" : "all");
+      .attr("pointer-events", (d) => {
+        if (!selectedIDs) return "all";
+        const binContainsSelected = d.some((val) =>
+          selectedIDs.includes(
+            this.config.data.find((c) => c[this.config.field] === val)?.country,
+          ),
+        );
+        return binContainsSelected ? "all" : "none";
+      });
   }
 }
