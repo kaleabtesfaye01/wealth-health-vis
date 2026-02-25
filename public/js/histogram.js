@@ -1,7 +1,7 @@
 class Histogram {
   constructor(config) {
     this.config = config;
-    this.margin = { top: 15, right: 15, bottom: 45, left: 50 };
+    this.margin = { top: 15, right: 15, bottom: 45, left: 30 };
     this.initVis();
   }
 
@@ -64,7 +64,8 @@ class Histogram {
     vis.bins = d3
       .bin()
       .domain(vis.xScale.domain())
-      .thresholds(vis.xScale.ticks(20))(values);
+      .thresholds(vis.xScale.ticks(30))(values);
+
     vis.yScale
       .domain([0, d3.max(vis.bins, (d) => d.length)])
       .nice()
@@ -88,7 +89,6 @@ class Histogram {
           );
       })
       .on("mousemove", (event) => {
-        // Standardized flip logic for responsive layout
         const tooltipWidth = 160;
         let xPos = event.pageX + 15;
         if (xPos + tooltipWidth > window.innerWidth)
@@ -119,16 +119,23 @@ class Histogram {
   }
 
   brushed(event) {
+    const vis = this;
     if (!event.sourceEvent) return;
     const selectedIDs = !event.selection
       ? null
-      : this.config.data
-          .filter((d) => {
-            const val = d[this.config.field];
-            const [x0, x1] = event.selection.map(this.xScale.invert);
-            return val >= x0 && val < x1;
+      : vis.bins
+          .filter((bin) => {
+            const [x0, x1] = event.selection.map(vis.xScale.invert);
+            return bin.x0 >= x0 && bin.x1 <= x1;
           })
-          .map((d) => d.country);
+          .flatMap((bin) =>
+            bin.map((val) => {
+              const country = vis.config.data.find(
+                (c) => c[vis.config.field] === val,
+              )?.country;
+              return country ? country : [];
+            }),
+          );
     this.config.onBrush(selectedIDs);
   }
 
@@ -138,13 +145,13 @@ class Histogram {
       .transition()
       .duration(200)
       .attr("fill-opacity", (d) => {
-        if (!selectedIDs) return 0.8;
+        if (!selectedIDs) return 1;
         const binContainsSelected = d.some((val) =>
           selectedIDs.includes(
             this.config.data.find((c) => c[this.config.field] === val)?.country,
           ),
         );
-        return binContainsSelected ? 1 : 0.1;
+        return binContainsSelected ? 1 : 0.3;
       })
       .attr("pointer-events", (d) => {
         if (!selectedIDs) return "all";

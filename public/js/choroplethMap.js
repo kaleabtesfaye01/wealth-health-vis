@@ -252,17 +252,17 @@ class ChoroplethMap {
     const selectedIDs = vis.config.geoData.features
       .filter((d) => {
         const bounds = vis.path.bounds(d);
-        // Adjust bounds based on mapGroup translation
+
         const countryLeft = bounds[0][0] + paddingX;
         const countryTop = bounds[0][1] + paddingY;
         const countryRight = bounds[1][0] + paddingX;
         const countryBottom = bounds[1][1] + paddingY;
 
-        return !(
-          countryRight < x0 ||
-          countryLeft > x1 ||
-          countryBottom < y0 ||
-          countryTop > y1
+        return (
+          countryRight >= x0 &&
+          countryLeft <= x1 &&
+          countryBottom >= y0 &&
+          countryTop <= y1
         );
       })
       .map((d) => d.properties.name);
