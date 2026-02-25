@@ -5,8 +5,8 @@ document.getElementById("enter-dashboard").addEventListener("click", () => {
 });
 
 Promise.all([
-  d3.json("../../data/world.geojson"),
-  d3.csv("../../data/processed/level1_data.csv"),
+  d3.json("data/world.geojson"),
+  d3.csv("data/processed/level1_data.csv"),
 ])
   .then(([geoData, countryData]) => {
     // Data Preprocessing

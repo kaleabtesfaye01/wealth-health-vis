@@ -5,10 +5,10 @@ import os
 def load_data():
     """Load raw datasets."""
     print("current working directory:", os.getcwd())
-    gdp = pd.read_csv('data/raw/gdp-per-capita-worldbank.csv')
-    life_expectancy = pd.read_csv('data/raw/life-expectancy.csv')
-    child_mortality = pd.read_csv('data/raw/child-mortality.csv')
-    human_development_index = pd.read_csv('data/raw/human-development-index.csv')
+    gdp = pd.read_csv('public/data/raw/gdp-per-capita-worldbank.csv')
+    life_expectancy = pd.read_csv('public/data/raw/life-expectancy.csv')
+    child_mortality = pd.read_csv('public/data/raw/child-mortality.csv')
+    human_development_index = pd.read_csv('public/data/raw/human-development-index.csv')
 
     return gdp, life_expectancy, child_mortality, human_development_index
 
@@ -75,7 +75,7 @@ def merge_data(gdp, life_expectancy, child_mortality, hdi):
 
 def save_data(df):
     """Save processed dataset."""
-    df.to_csv('data/processed/level1_data.csv', index=False)
+    df.to_csv('public/data/processed/level1_data.csv', index=False)
 
 
 def main():
