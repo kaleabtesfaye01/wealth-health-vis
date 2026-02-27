@@ -30,11 +30,11 @@ This dashboard visualizes the relationship between a nation's wealth and its pub
 
 Four datasets were merged into a single master file covering **2022** data:
 
-| Dataset | Description |
-|---|---|
-| **Life Expectancy** | Average years a newborn is expected to live |
-| **Child Mortality Rate** | Under-five deaths per 1,000 live births |
-| **GDP per Capita** | Economic output per person (PPP-adjusted, World Bank) |
+| Dataset                           | Description                                             |
+| --------------------------------- | ------------------------------------------------------- |
+| **Life Expectancy**               | Average years a newborn is expected to live             |
+| **Child Mortality Rate**          | Under-five deaths per 1,000 live births                 |
+| **GDP per Capita**                | Economic output per person (PPP-adjusted, World Bank)   |
 | **Human Development Index (HDI)** | UN composite of health, education, and living standards |
 
 **Processing (`preprocess.py`):** Raw CSVs were cleaned (dropping nulls and redundant columns), filtered to 2022, and joined via inner merges on `Entity` and `Code` (ISO-3). Only countries with complete data across all four indicators are included. The output is `level1_data.csv`.
@@ -101,12 +101,12 @@ Child mortality data reveals a persistent cluster of high rates in Sub-Saharan A
 
 ## Tech Stack & Code Structure
 
-| Technology | Role |
-|---|---|
-| **D3.js (v7)** | Data binding, projections, scales, brushing logic |
-| **JavaScript (ES6+)** | Modular class-based component architecture |
-| **HTML5 / CSS3** | Layout (Flexbox/Grid), CSS Variables for theming |
-| **Python (Pandas)** | Data cleaning and multi-set merging pipeline |
+| Technology            | Role                                              |
+| --------------------- | ------------------------------------------------- |
+| **D3.js (v7)**        | Data binding, projections, scales, brushing logic |
+| **JavaScript (ES6+)** | Modular class-based component architecture        |
+| **HTML5 / CSS3**      | Layout (Flexbox/Grid), CSS Variables for theming  |
+| **Python (Pandas)**   | Data cleaning and multi-set merging pipeline      |
 
 The project follows a **Class-Based Modular Pattern**:
 
@@ -125,6 +125,7 @@ The project follows a **Class-Based Modular Pattern**:
 **Reflections** — A **Global Metric State Manager** would be the first thing I'd add in a rebuild, allowing a single selector to update the Map, Histograms, and Scatterplot simultaneously.
 
 **Roadmap:**
+
 - **Dynamic Zoom & Pan** (`d3-zoom`) — Auto-zoom the map when a cluster is brushed.
 - **Predictive ML** — A regression model with a "hypothetical GDP" slider to forecast health outcomes.
 
@@ -138,4 +139,11 @@ I used Gemini as a debugging aid for container overflow issues and D3.js SVG sca
 
 ## Demo Video
 
-<div style="position: relative; padding-bottom: 65.01809408926417%; height: 0;"><iframe src="https://www.loom.com/embed/0119ecd6fb294488846f8552384a99d8" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+<div>
+    <a href="https://www.loom.com/share/0119ecd6fb294488846f8552384a99d8">
+      <p>Health vs Wealth Dashboard - 26 February 2026 - Watch Video</p>
+    </a>
+    <a href="https://www.loom.com/share/0119ecd6fb294488846f8552384a99d8">
+      <img src="https://cdn.loom.com/sessions/thumbnails/0119ecd6fb294488846f8552384a99d8-d580d7c8493117f7-full-play.gif#t=0.1">
+    </a>
+</div>
